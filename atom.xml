@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Bencao Blog]]></title>
+  <title><![CDATA[BenCao Blog]]></title>
   <link href="http://blog.bencao.it/atom.xml" rel="self"/>
   <link href="http://blog.bencao.it/"/>
-  <updated>2013-03-27T10:15:50+08:00</updated>
+  <updated>2013-03-27T15:05:43+08:00</updated>
   <id>http://blog.bencao.it/</id>
   <author>
     <name><![CDATA[Ben Cao]]></name>
@@ -12,5 +12,93 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Say hello world to new blog]]></title>
+    <link href="http://blog.bencao.it/blog/2013/03/27/say-hello-world-to-new-blog/"/>
+    <updated>2013-03-27T10:19:00+08:00</updated>
+    <id>http://blog.bencao.it/blog/2013/03/27/say-hello-world-to-new-blog</id>
+    <content type="html"><![CDATA[<h1>Setup</h1>
+
+<p>After clone octopress to local, it&#8217;s easy to deploly to github.</p>
+
+<figure class='code'><figcaption><span>Setup octopress  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake setup_github_pages
+</span><span class='line'>rake install
+</span><span class='line'>git commit
+</span><span class='line'>rake generate
+</span><span class='line'>rake deploy
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And it&#8217;s done.</p>
+
+<h2>Customized domain name</h2>
+
+<p>I want to redirect my domain <a href="http://blog.bencao.it">blog.bencao.it</a> to the newly setup site.
+It&#8217;s simple, just add a file under <em>source</em> directory named &#8220;CNAME&#8221; with following content</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>blog.bencao.it</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>New post</h2>
+
+<p>Rake is the core of doing things in octopress. To create a post, just</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake new_post<span class="o">[</span><span class="s2">&quot;say hello world to new blog&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>and I can start editing this post, with a YAML header showing meta data for this article.</p>
+
+<h2>Writing Code Block</h2>
+
+<p>As a blog framework for geek, writing code block should be easy. Let&#8217;s say helloworld in Ruby.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">SayHello</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">say</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Hello World!&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Writing Blockquote</h2>
+
+<p>Did you remember the words from Steve Jobs?</p>
+
+<blockquote><p>Stay hungry, stay foolish.</p></blockquote>
+
+
+<h2>Choose a Theme</h2>
+
+<p>Take <a href="https://github.com/shashankmehta/greyshade">greyshade</a> as example</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">cd </span>octopress
+</span><span class='line'>git clone git@github.com:shashankmehta/greyshade.git .themes/greyshade
+</span><span class='line'><span class="nb">echo</span> <span class="s2">&quot;\$greyshade: #AA3;&quot;</span> &gt;&gt; sass/custom/_colors.scss
+</span><span class='line'>rake <span class="s2">&quot;install[greyshade]&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+]]></content>
+  </entry>
   
 </feed>
