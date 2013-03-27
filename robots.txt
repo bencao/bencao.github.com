@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: http://bencao.github.com/sitemap.xml 
+Sitemap: http://blog.bencao.it/sitemap.xml 

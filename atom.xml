@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Bencao Blog]]></title>
-  <link href="http://bencao.github.com/atom.xml" rel="self"/>
-  <link href="http://bencao.github.com/"/>
-  <updated>2013-03-26T22:05:51+08:00</updated>
-  <id>http://bencao.github.com/</id>
+  <link href="http://blog.bencao.it/atom.xml" rel="self"/>
+  <link href="http://blog.bencao.it/"/>
+  <updated>2013-03-27T09:57:46+08:00</updated>
+  <id>http://blog.bencao.it/</id>
   <author>
     <name><![CDATA[Ben Cao]]></name>
     
