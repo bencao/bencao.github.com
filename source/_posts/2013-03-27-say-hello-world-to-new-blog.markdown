@@ -27,6 +27,16 @@ It's simple, just add a file under *source* directory named "CNAME" with followi
 blog.bencao.it
 {% endcodeblock %}
 
+## Choose a Theme
+Take [greyshade](https://github.com/shashankmehta/greyshade) as example
+
+{% codeblock lang:bash %}
+cd octopress
+git clone git@github.com:shashankmehta/greyshade.git .themes/greyshade
+echo "\$greyshade: #AA3;" >> sass/custom/_colors.scss
+rake "install[greyshade]"
+{% endcodeblock %}
+
 ## New post
 Rake is the core of doing things in octopress. To create a post, just
 
@@ -47,6 +57,24 @@ class SayHello
 end
 {% endcodeblock %}
 
+Also we can including code from file, which even support download
+
+{% include_code tank_index.html %}
+
+## Include multi media
+Embed a image is simple
+
+{% img http://placekitten.com/900/200 %}
+
+Pull it left/right if you wanted.
+{% img left http://placekitten.com/120/80 %}
+
+No matter where we wanted to go, here are some guides.
+
+- Read books
+- Thinking in Mind
+- Practice, practice, practice
+
 ## Writing Blockquote
 Did you remember the words from Steve Jobs?
 
@@ -54,13 +82,12 @@ Did you remember the words from Steve Jobs?
 Stay hungry, stay foolish.
 {% endblockquote %}
 
-## Choose a Theme
-Take [greyshade](https://github.com/shashankmehta/greyshade) as example
+## Writing Pullquote
 
-{% codeblock lang:bash %}
-cd octopress
-git clone git@github.com:shashankmehta/greyshade.git .themes/greyshade
-echo "\$greyshade: #AA3;" >> sass/custom/_colors.scss
-rake "install[greyshade]"
-{% endcodeblock %}
+{% pullquote %}
+What is the meaning of life? This is the final question we will face when we are walking on the road.
+Someone says it's {"DREAM"}, do you agree?
+{% endpullquote %}
 
+## Include partial
+{% render_partial ./_partials/2013-03-27-i-am-a-partial.markdown %}
