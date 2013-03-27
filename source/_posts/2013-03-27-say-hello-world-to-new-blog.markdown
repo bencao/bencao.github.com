@@ -19,7 +19,7 @@ rake deploy
 
 And it's done.
 
-## Customized domain name
+# Customized domain name
 I want to redirect my domain [blog.bencao.it](http://blog.bencao.it) to the newly setup site.
 It's simple, just add a file under *source* directory named "CNAME" with following content
 
@@ -27,7 +27,7 @@ It's simple, just add a file under *source* directory named "CNAME" with followi
 blog.bencao.it
 {% endcodeblock %}
 
-## Choose a Theme
+# Choose a Theme
 Take [greyshade](https://github.com/shashankmehta/greyshade) as example
 
 {% codeblock lang:bash %}
@@ -37,7 +37,7 @@ echo "\$greyshade: #AA3;" >> sass/custom/_colors.scss
 rake "install[greyshade]"
 {% endcodeblock %}
 
-## New post
+# New post
 Rake is the core of doing things in octopress. To create a post, just
 
 {% codeblock lang:bash %}
@@ -46,7 +46,7 @@ rake new_post["say hello world to new blog"]
 
 and I can start editing this post, with a YAML header showing meta data for this article.
 
-## Writing Code Block
+# Writing Code Block
 As a blog framework for geek, writing code block should be easy. Let's say helloworld in Ruby.
 
 {% codeblock lang:ruby %}
@@ -61,7 +61,24 @@ Also we can including code from file, which even support download
 
 {% include_code tank_index.html %}
 
-## Include multi media
+# Writing Blockquote
+Did you remember the words from Steve Jobs?
+
+{% blockquote %}
+Stay hungry, stay foolish.
+{% endblockquote %}
+
+# Writing Pullquote
+
+{% pullquote %}
+What is the meaning of life? This is the final question we will face when we are walking on the road.
+Someone says it's {"DREAM"}, do you agree?
+{% endpullquote %}
+
+# Include partial
+{% render_partial ./_partials/2013-03-27-i-am-a-partial.markdown %}
+
+# Include multi media
 Embed a image is simple
 
 {% img http://placekitten.com/900/200 %}
@@ -74,20 +91,3 @@ No matter where we wanted to go, here are some guides.
 - Read books
 - Thinking in Mind
 - Practice, practice, practice
-
-## Writing Blockquote
-Did you remember the words from Steve Jobs?
-
-{% blockquote %}
-Stay hungry, stay foolish.
-{% endblockquote %}
-
-## Writing Pullquote
-
-{% pullquote %}
-What is the meaning of life? This is the final question we will face when we are walking on the road.
-Someone says it's {"DREAM"}, do you agree?
-{% endpullquote %}
-
-## Include partial
-{% render_partial ./_partials/2013-03-27-i-am-a-partial.markdown %}
