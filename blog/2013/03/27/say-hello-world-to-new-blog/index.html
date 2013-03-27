@@ -109,6 +109,21 @@ It&#8217;s simple, just add a file under <em>source</em> directory named &#8220;
 </pre></td><td class='code'><pre><code class=''><span class='line'>blog.bencao.it</span></code></pre></td></tr></table></div></figure>
 
 
+<h2>Choose a Theme</h2>
+
+<p>Take <a href="https://github.com/shashankmehta/greyshade">greyshade</a> as example</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">cd </span>octopress
+</span><span class='line'>git clone git@github.com:shashankmehta/greyshade.git .themes/greyshade
+</span><span class='line'><span class="nb">echo</span> <span class="s2">&quot;\$greyshade: #AA3;&quot;</span> &gt;&gt; sass/custom/_colors.scss
+</span><span class='line'>rake <span class="s2">&quot;install[greyshade]&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
 <h2>New post</h2>
 
 <p>Rake is the core of doing things in octopress. To create a post, just</p>
@@ -137,6 +152,72 @@ It&#8217;s simple, just add a file under <em>source</em> directory named &#8220;
 </span></code></pre></td></tr></table></div></figure>
 
 
+<p>Also we can including code from file, which even support download</p>
+
+<figure class='code'><figcaption><span> (tank_index.html)</span> <a href='/downloads/code/tank_index.html'>download</a></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="cp">&lt;!DOCTYPE html&gt;</span>
+</span><span class='line'><span class="nt">&lt;html&gt;</span>
+</span><span class='line'><span class="nt">&lt;head&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">&quot;content-type&quot;</span> <span class="na">content=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;title&gt;</span>FC Tank - jsFiddle demo<span class="nt">&lt;/title&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/coffeescript.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&#39;text/javascript&#39;</span> <span class="na">src=</span><span class="s">&#39;lib/jquery-2.0.0b1.js&#39;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&#39;text/javascript&#39;</span> <span class="na">src=</span><span class="s">&#39;lib/lodash.min.js&#39;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&#39;text/javascript&#39;</span> <span class="na">src=</span><span class="s">&quot;lib/ocanvas-2.3.1.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;style </span><span class="na">type=</span><span class="s">&#39;text/css&#39;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nf">#resources</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">display</span><span class="o">:</span> <span class="k">none</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nt">&lt;/style&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/coffeescript&quot;</span> <span class="na">src=</span><span class="s">&quot;tank.coffee&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;/head&gt;</span>
+</span><span class='line'><span class="nt">&lt;body&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;img</span> <span class="na">id=</span><span class="s">&quot;resources&quot;</span> <span class="na">alt=</span><span class="s">&quot;tanks&quot;</span> <span class="na">width=</span><span class="s">&quot;400&quot;</span> <span class="na">height=</span><span class="s">&quot;360&quot;</span> <span class="na">src=</span><span class="s">&quot;tanks.png&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;canvas</span> <span class="na">id=</span><span class="s">&quot;canvas&quot;</span> <span class="na">width=</span><span class="s">&quot;520&quot;</span> <span class="na">height=</span><span class="s">&quot;520&quot;</span> <span class="na">tabindex=</span><span class="s">&quot;1&quot;</span><span class="nt">&gt;&lt;/canvas&gt;</span>
+</span><span class='line'><span class="nt">&lt;/body&gt;</span>
+</span><span class='line'><span class="nt">&lt;/html&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Include multi media</h2>
+
+<p>Embed a image is simple</p>
+
+<p><img src="http://placekitten.com/900/200"></p>
+
+<p>Pull it left/right if you wanted.
+<img class="left" src="http://placekitten.com/120/80"></p>
+
+<p>No matter where we wanted to go, here are some guides.</p>
+
+<ul>
+<li>Read books</li>
+<li>Thinking in Mind</li>
+<li>Practice, practice, practice</li>
+</ul>
+
+
 <h2>Writing Blockquote</h2>
 
 <p>Did you remember the words from Steve Jobs?</p>
@@ -144,22 +225,17 @@ It&#8217;s simple, just add a file under <em>source</em> directory named &#8220;
 <blockquote><p>Stay hungry, stay foolish.</p></blockquote>
 
 
-<h2>Choose a Theme</h2>
+<h2>Writing Pullquote</h2>
 
-<p>Take <a href="https://github.com/shashankmehta/greyshade">greyshade</a> as example</p>
+<p><span class='pullquote-right' data-pullquote='DREAM'>
+What is the meaning of life? This is the final question we will face when we are walking on the road.
+Someone says it&#8217;s DREAM, do you agree?
+</span></p>
 
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">cd </span>octopress
-</span><span class='line'>git clone git@github.com:shashankmehta/greyshade.git .themes/greyshade
-</span><span class='line'><span class="nb">echo</span> <span class="s2">&quot;\$greyshade: #AA3;&quot;</span> &gt;&gt; sass/custom/_colors.scss
-</span><span class='line'>rake <span class="s2">&quot;install[greyshade]&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
+<h2>Include partial</h2>
 
-
-
+<p>Tell you a secret.
+I am a partial.</p>
 </div>
 
 </article>
