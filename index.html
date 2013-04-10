@@ -7,11 +7,8 @@
 	<meta name="author" content="Ben Cao">
 
 	
-	<meta name="description" content="Mar 27th, 2013 Say Hello World to New Blog Setup After clone octopress to local, it&#8217;s easy to deploly to github. Setup octopress 1
-2
-3
-4
-5 &hellip;">
+	<meta name="description" content="Apr 10th, 2013 First Time to Contribute a Gem Recent days I just wrote an active record extension to make cache optimization easier for company.
+I &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -79,6 +76,339 @@
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-10T11:49:00+08:00" data-updated="true" itemprop="datePublished">Apr 10<span>th</span>, 2013</time></div>
+		<div class="tags">
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2013/04/10/first-time-to-contribute-a-gem/" itemprop="url">First Time to Contribute a Gem</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>Recent days I just wrote an active record extension to make cache optimization easier for company.
+I realized it&#8217;s a useful tool and publish it as a gem might be a good idea.
+So I start writing the gem &#8216;acts_as_method_cacheable&#8217; yesterday afternoon, and I found it&#8217;s an interesting journey.
+The home page is <a href="https://github.com/bencao/acts_as_method_cacheable">here</a>.</p>
+
+<p>Here are the steps I did it:</p>
+
+<h2>create a Gem with bundle</h2>
+
+<p>bundle gem xxx will generate a skeleton of a gem, the gem has a hierachy like this</p>
+
+<p><img src="/images/posts/gem_hierachy.png"></p>
+
+<h2>write info in gemspec file</h2>
+
+<p>A typical gemspec file looks like this, which is quite straight forward.</p>
+
+<figure class='code'><figcaption><span>&#8220;acts_as_method_cacheable.gemspec&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Gem</span><span class="p">:</span><span class="ss">:Specification</span><span class="o">.</span><span class="n">new</span> <span class="k">do</span> <span class="o">|</span><span class="n">spec</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">name</span>          <span class="o">=</span> <span class="s2">&quot;acts_as_method_cacheable&quot;</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">version</span>       <span class="o">=</span> <span class="ss">ActsAsMethodCacheable</span><span class="p">:</span><span class="ss">:VERSION</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">authors</span>       <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;Ben Cao&quot;</span><span class="o">]</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">email</span>         <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;benb88@gmail.com&quot;</span><span class="o">]</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">description</span>   <span class="o">=</span> <span class="s2">&quot;Make cache methods on ActiveRecord easy!&quot;</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">summary</span>       <span class="o">=</span> <span class="s2">&quot;Instead of writing def expensive { @cached_expensive ||= original_expensive }, now you can write instance.cache_method(:expensive) instead. Also support nested &gt;</span>
+</span><span class='line'><span class="s2">  spec.homepage      = &quot;</span><span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">bencao</span><span class="o">/</span><span class="n">acts_as_method_cacheable</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.license       = &quot;</span><span class="no">MIT</span><span class="s2">&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="s2">  spec.files         = `git ls-files`.split($/)</span>
+</span><span class='line'><span class="s2">  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }</span>
+</span><span class='line'><span class="s2">  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})</span>
+</span><span class='line'><span class="s2">  spec.require_paths = [&quot;</span><span class="n">lib</span><span class="s2">&quot;]</span>
+</span><span class='line'>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">bundler</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">1</span><span class="o">.</span><span class="mi">3</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">rake</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">10</span><span class="o">.</span><span class="mi">0</span><span class="o">.</span><span class="mi">4</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">rspec</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">2</span><span class="o">.</span><span class="mi">13</span><span class="o">.</span><span class="mi">0</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">mocha</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">0</span><span class="o">.</span><span class="mi">13</span><span class="o">.</span><span class="mi">3</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">sqlite3</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">1</span><span class="o">.</span><span class="mi">3</span><span class="o">.</span><span class="mi">7</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">pry</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">pry</span><span class="o">-</span><span class="n">theme</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">pry</span><span class="o">-</span><span class="n">nav</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_dependency &quot;</span><span class="n">activesupport</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">3</span><span class="o">.</span><span class="mi">2</span><span class="o">.</span><span class="mi">13</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_dependency &quot;</span><span class="n">activerecord</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">3</span><span class="o">.</span><span class="mi">2</span><span class="o">.</span><span class="mi">13</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note the dependencies section. development_dependencies will only be installed when you want to develop and runs</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>bundle install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>in gem source directory.</p>
+
+<h2>add test</h2>
+
+<p>In order to run spec, I introduced a few development_dependencies, including rspec/sqlite3/pry.
+Then I created &#8220;db&#8221; and &#8220;spec&#8221; folder, where hosts database/spec related files.</p>
+
+<p>Before that, I need a sqlite db and setting up stand alone active record without rails.
+After some digest, I wrote this spec_helper, which setup up active record to a empty db.</p>
+
+<figure class='code'><figcaption><span>&#8220;spec_helper.rb&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;active_support&#39;</span>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;active_record&#39;</span>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;sqlite3&#39;</span>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;pry&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">db_config</span> <span class="o">=</span> <span class="ss">YAML</span><span class="p">:</span><span class="ss">:load</span><span class="p">(</span><span class="no">IO</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;db/database.yml&#39;</span><span class="p">))</span>
+</span><span class='line'><span class="n">db_file</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">[</span><span class="s1">&#39;development&#39;</span><span class="o">][</span><span class="s1">&#39;database&#39;</span><span class="o">]</span>
+</span><span class='line'><span class="no">File</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">db_file</span><span class="p">)</span> <span class="k">if</span> <span class="no">File</span><span class="o">.</span><span class="n">exists?</span><span class="p">(</span><span class="n">db_file</span><span class="p">)</span>
+</span><span class='line'><span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span><span class="o">.</span><span class="n">configurations</span> <span class="o">=</span> <span class="n">db_config</span>
+</span><span class='line'><span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span><span class="o">.</span><span class="n">establish_connection</span><span class="p">(</span><span class="s1">&#39;development&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>For a simple gem like this, I just defined two active record class &#8220;Post&#8221; and &#8220;Comment&#8221; inside my spec file, and use them inside a describe block.
+To make these model working, we need a ActiveRecord::Migration do create these tables.
+The spec might be run several times, also migration will be run several times.
+So you understand why I have to delete the sqlite db file in spec_helper.</p>
+
+<p>Here is how the spec looks like:</p>
+
+<figure class='code'><figcaption><span>&#8220;acts_as_method_cacheable_spec.rb&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;spec_helper.rb&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Schema</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Migration</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">change</span>
+</span><span class='line'>    <span class="n">create_table</span> <span class="ss">:posts</span> <span class="k">do</span> <span class="o">|</span><span class="n">t</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:title</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:date</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">create_table</span> <span class="ss">:comments</span> <span class="k">do</span> <span class="o">|</span><span class="n">t</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:content</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:author</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:date</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">references</span> <span class="ss">:post</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'><span class="no">Schema</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">change</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;acts_as_method_cacheable&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Post</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span>
+</span><span class='line'>  <span class="n">has_many</span> <span class="ss">:comments</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_authors</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:author</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_contents</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:content</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_dates</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:date</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_signatures</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:signature</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">acts_as_method_cacheable</span> <span class="ss">:methods</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="ss">:comment_authors</span><span class="p">,</span> <span class="ss">:comment_contents</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Comment</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span>
+</span><span class='line'>  <span class="n">belongs_to</span> <span class="ss">:post</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">signature</span>
+</span><span class='line'>    <span class="n">sub_signature</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">sub_signature</span>
+</span><span class='line'>    <span class="s2">&quot;cool!&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">acts_as_method_cacheable</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="no">ActsAsMethodCacheable</span> <span class="k">do</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">before</span><span class="p">(</span><span class="ss">:each</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>    <span class="vi">@post</span> <span class="o">=</span> <span class="no">Post</span><span class="o">.</span><span class="n">create!</span><span class="p">(</span><span class="ss">:title</span> <span class="o">=&gt;</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="ss">:date</span> <span class="o">=&gt;</span> <span class="s1">&#39;2013-04-04&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@post</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">create!</span><span class="p">(</span><span class="ss">:content</span> <span class="o">=&gt;</span> <span class="s1">&#39;ct1&#39;</span><span class="p">,</span> <span class="ss">:author</span> <span class="o">=&gt;</span> <span class="s1">&#39;ben&#39;</span><span class="p">,</span> <span class="ss">:date</span> <span class="o">=&gt;</span> <span class="s1">&#39;2013-04-05&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@post</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">create!</span><span class="p">(</span><span class="ss">:content</span> <span class="o">=&gt;</span> <span class="s1">&#39;ct2&#39;</span><span class="p">,</span> <span class="ss">:author</span> <span class="o">=&gt;</span> <span class="s1">&#39;feng&#39;</span><span class="p">,</span> <span class="ss">:date</span> <span class="o">=&gt;</span> <span class="s1">&#39;2013-04-06&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@comment1</span><span class="p">,</span> <span class="vi">@comment2</span> <span class="o">=</span> <span class="vi">@post</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">to_a</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">context</span> <span class="s2">&quot;class&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;should return the same result as without cache&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="vi">@post</span><span class="o">.</span><span class="n">comment_authors</span><span class="o">.</span><span class="n">should</span> <span class="o">==</span> <span class="vi">@comment1</span><span class="o">.</span><span class="n">author</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="vi">@comment2</span><span class="o">.</span><span class="n">author</span>
+</span><span class='line'>      <span class="vi">@post</span><span class="o">.</span><span class="n">comment_authors</span><span class="o">.</span><span class="n">should</span> <span class="o">==</span> <span class="vi">@comment1</span><span class="o">.</span><span class="n">author</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="vi">@comment2</span><span class="o">.</span><span class="n">author</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># ...</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>build and publish</h2>
+
+<p>build gem is easy.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>gem build acts_as_method_cacheable.gemspec
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>publish gem is easy once you&#8217;ve registered a rubygem.org account and downloaded credentials to localhost.</p>
+
+<figure class='code'><figcaption><span>&#8220;download credentials&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>curl -u USERNAME https://rubygems.org/api/v1/api_key.yaml &gt; ~/.gem/credentials
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>&#8220;publish gem&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>gem push acts_as_method_cacheable-0.1.0.gem
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And it&#8217;s all done.</p>
+
+		
+		
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
