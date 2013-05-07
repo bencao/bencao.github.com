@@ -91,3 +91,9 @@ No matter where we wanted to go, here are some guides.
 - Read books
 - Thinking in Mind
 - Practice, practice, practice
+
+# Preview posts
+To preview posts @localhost, there's also a rake task for help:
+{% codeblock lang:bash %}
+rake preview
+{% endcodeblock %}
