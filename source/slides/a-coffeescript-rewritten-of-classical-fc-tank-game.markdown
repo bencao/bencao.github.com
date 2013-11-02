@@ -18,6 +18,11 @@ deck_scale: false
 {% endslide %}
 
 {% slide %}
+# Play [it](http://localhost:8000)!
+
+{% endslide %}
+
+{% slide %}
 ## Game Basics
 
 - The law of frame
@@ -28,14 +33,6 @@ deck_scale: false
 - Stage design and Tiled map
 - Tunning numbers
 - Tunning performance
-
-{% endslide %}
-
-{% slide %}
-## Others
-
-- Why I love Coffeescript more than Javascript
-- Unit Test and Continuous Integration
 
 {% endslide %}
 
@@ -203,6 +200,29 @@ Tank is seperated into
 {% endslide %}
 
 {% slide %}
+{% codeblock Stage start and stop lang:coffeescript %}
+class StageScene extends Scene
+  constructor: (@game) ->
+    super(@game)
+    @init_stage_nodes()
+
+  start: () ->
+    super()
+    @current_stage = @game.get_config('current_stage')
+    @update_stage_label()
+    if @game.get_config('stage_autostart')
+      setTimeout((() => @game.switch_scene('game')), 2000)
+    else
+      @enable_stage_control()
+
+  stop: () ->
+    super()
+    @disable_stage_control()
+    @prepare_for_game_scene()
+{% endcodeblock %}
+{% endslide %}
+
+{% slide %}
 ## Stage design and Tiled map
 
 - It's possible to design stage by a few lines of code, ok for test but not good for human.
@@ -230,6 +250,14 @@ Tank is seperated into
 {% endslide %}
 
 {% slide %}
+## What's more
+
+- Why I love Coffeescript more than Javascript
+- Unit Test and Continuous Integration
+
+{% endslide %}
+
+{% slide %}
 ## Why I love Coffeescript more than Javascript
 
 - human friendly
@@ -237,6 +265,7 @@ Tank is seperated into
 - simpler array/hash iteration
 - @ instead of this
 - shorthand for function definition
+- popular now
 {% endslide %}
 
 {% slide %}
@@ -244,11 +273,7 @@ Tank is seperated into
 
 You really should try the excellent CI tool [Travis-CI](https://travis-ci.org/). It support running unit tests in a variety of environments and is already seamlessly integrated with Github.
 
-The unit test tool I used is QUnit.
-{% endslide %}
-
-{% slide %}
-## Ideas and Questions?
+The unit test tool I used is [QUnit](http://qunitjs.com/).
 {% endslide %}
 
 {% slide %}
@@ -262,4 +287,8 @@ The unit test tool I used is QUnit.
 - [QUnit](http://qunitjs.com/)
 - [PathFindingJs](https://github.com/qiao/PathFinding.js)
 - [How to be a game programer](http://www.gamengines.com/article-549.html)
+{% endslide %}
+
+{% slide %}
+## Ideas and Questions?
 {% endslide %}

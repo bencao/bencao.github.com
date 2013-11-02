@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "First time to contribute a Gem"
+title: "How to write a ruby gem"
 date: 2013-04-10 11:49
 comments: true
 categories:
