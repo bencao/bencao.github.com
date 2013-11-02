@@ -7,13 +7,12 @@
 	<meta name="author" content="Ben Cao">
 
 	
-	<meta name="description" content="Coffee Tank May 8th, 2013 @FW Game Basics The law of frame
+	<meta name="description" content="Coffee Tank May 8th, 2013 @FW Play it! Game Basics The law of frame
 Path finding
 Enemy AI
 User input handling
 Scenes
-Stage design and Tiled map
-Tunning &hellip;">
+Stage design and Tiled map &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -62,6 +61,11 @@ Tunning &hellip;">
 
 
 
+<div class='slide'><h1>Play <a href="http://localhost:8000">it</a>!</h1></div>
+
+
+
+
 <div class='slide'><h2>Game Basics</h2>
 
 <ul>
@@ -73,17 +77,6 @@ Tunning &hellip;">
 <li>Stage design and Tiled map</li>
 <li>Tunning numbers</li>
 <li>Tunning performance</li>
-</ul>
-</div>
-
-
-
-
-<div class='slide'><h2>Others</h2>
-
-<ul>
-<li>Why I love Coffeescript more than Javascript</li>
-<li>Unit Test and Continuous Integration</li>
 </ul>
 </div>
 
@@ -376,6 +369,49 @@ Tunning &hellip;">
 
 
 
+<div class='slide'><figure class='code'><figcaption><span>Stage start and stop  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='coffeescript'><span class='line'><span class="k">class</span> <span class="nx">StageScene</span> <span class="k">extends</span> <span class="nx">Scene</span>
+</span><span class='line'>  <span class="nv">constructor: </span><span class="nf">(@game) -&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">(</span><span class="nx">@game</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">@init_stage_nodes</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">start: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">()</span>
+</span><span class='line'>    <span class="vi">@current_stage = </span><span class="nx">@game</span><span class="p">.</span><span class="nx">get_config</span><span class="p">(</span><span class="s">&#39;current_stage&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">@update_stage_label</span><span class="p">()</span>
+</span><span class='line'>    <span class="k">if</span> <span class="nx">@game</span><span class="p">.</span><span class="nx">get_config</span><span class="p">(</span><span class="s">&#39;stage_autostart&#39;</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">setTimeout</span><span class="p">((()</span> <span class="o">=&gt;</span> <span class="nx">@game</span><span class="p">.</span><span class="nx">switch_scene</span><span class="p">(</span><span class="s">&#39;game&#39;</span><span class="p">)),</span> <span class="mi">2000</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="nx">@enable_stage_control</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">stop: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">@disable_stage_control</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">@prepare_for_game_scene</span><span class="p">()</span>
+</span></code></pre></td></tr></table></div></figure>
+</div>
+
+
+
+
 <div class='slide'><h2>Stage design and Tiled map</h2>
 
 <ul>
@@ -416,6 +452,17 @@ Tunning &hellip;">
 
 
 
+<div class='slide'><h2>What&rsquo;s more</h2>
+
+<ul>
+<li>Why I love Coffeescript more than Javascript</li>
+<li>Unit Test and Continuous Integration</li>
+</ul>
+</div>
+
+
+
+
 <div class='slide'><h2>Why I love Coffeescript more than Javascript</h2>
 
 <ul>
@@ -424,6 +471,7 @@ Tunning &hellip;">
 <li>simpler array/hash iteration</li>
 <li>@ instead of this</li>
 <li>shorthand for function definition</li>
+<li>popular now</li>
 </ul>
 </div>
 
@@ -434,12 +482,7 @@ Tunning &hellip;">
 
 <p>You really should try the excellent CI tool <a href="https://travis-ci.org/">Travis-CI</a>. It support running unit tests in a variety of environments and is already seamlessly integrated with Github.</p>
 
-<p>The unit test tool I used is QUnit.</p></div>
-
-
-
-
-<div class='slide'><h2>Ideas and Questions?</h2></div>
+<p>The unit test tool I used is <a href="http://qunitjs.com/">QUnit</a>.</p></div>
 
 
 
@@ -457,6 +500,11 @@ Tunning &hellip;">
 <li><a href="http://www.gamengines.com/article-549.html">How to be a game programer</a></li>
 </ul>
 </div>
+
+
+
+
+<div class='slide'><h2>Ideas and Questions?</h2></div>
 
 
 

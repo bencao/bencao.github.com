@@ -4,7 +4,7 @@
   <title><![CDATA[BenCao Blog]]></title>
   <link href="http://blog.bencao.it/atom.xml" rel="self"/>
   <link href="http://blog.bencao.it/"/>
-  <updated>2013-05-08T11:27:35+08:00</updated>
+  <updated>2013-11-02T22:08:51+08:00</updated>
   <id>http://blog.bencao.it/</id>
   <author>
     <name><![CDATA[Ben Cao]]></name>
@@ -347,10 +347,10 @@ It reduces each path finding time from around 700ms to less than 50ms.</p>
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[First time to contribute a Gem]]></title>
-    <link href="http://blog.bencao.it/blog/2013/04/10/first-time-to-contribute-a-gem/"/>
+    <title type="html"><![CDATA[How to write a ruby gem]]></title>
+    <link href="http://blog.bencao.it/blog/2013/04/10/how-to-write-a-ruby-gem/"/>
     <updated>2013-04-10T11:49:00+08:00</updated>
-    <id>http://blog.bencao.it/blog/2013/04/10/first-time-to-contribute-a-gem</id>
+    <id>http://blog.bencao.it/blog/2013/04/10/how-to-write-a-ruby-gem</id>
     <content type="html"><![CDATA[<p>Recent days I just wrote an active record extension to make cache optimization easier for company.
 I realized it&#8217;s a useful tool and publish it as a gem might be a good idea.
 So I start writing the gem &#8216;acts_as_method_cacheable&#8217; yesterday afternoon, and I found it&#8217;s an interesting journey.
