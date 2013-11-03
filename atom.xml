@@ -1,0 +1,835 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[BenCao Blog]]></title>
+  <link href="http://blog.bencao.it/atom.xml" rel="self"/>
+  <link href="http://blog.bencao.it/"/>
+  <updated>2013-11-02T22:08:51+08:00</updated>
+  <id>http://blog.bencao.it/</id>
+  <author>
+    <name><![CDATA[Ben Cao]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Game develop in HTML5 canvas and coffeescript]]></title>
+    <link href="http://blog.bencao.it/blog/2013/05/06/game-develop-in-html5-canvas-and-coffeescript/"/>
+    <updated>2013-05-06T18:54:00+08:00</updated>
+    <id>http://blog.bencao.it/blog/2013/05/06/game-develop-in-html5-canvas-and-coffeescript</id>
+    <content type="html"><![CDATA[<p>In the past a few months, I tried to rebuild the classical FC tank game in coffeescript.</p>
+
+<p>The final work is <a href="http://blog.bencao.it/fc_tank">here</a>.</p>
+
+<p><img src="http://blog.bencao.it/images/posts/tank_welcome_scene.png">
+<img src="http://blog.bencao.it/images/posts/tank_game_scene.png"></p>
+
+<p>It&#8217;s an interesting journey, and following aspects are what I feel worth mentioning.</p>
+
+<h1>Game Basics</h1>
+
+<h2>The law of frame</h2>
+
+<p>The most foundamental thing before developing a game is to understand FPS - frame per second, and how the game world are running in a frame by frame law.</p>
+
+<p>Before each frame was drawn, game program need to calculate the position, direction, speed, and other attributes for each moving objects(display object) in screen.
+The higher the fps is, the smoother users feel. Typical refresh rate of LCD screen is 60Hz, so it&#8217;s good enough to set 60 fps as our goal.
+This set a great challenge for game developers because some parts may sometimes take a lot of CPU time.
+Great game need a great performance optimization.</p>
+
+<p>Here&#8217;s the core loop of Tank time line:</p>
+
+<figure class='code'><figcaption><span>Tank Core Loop  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='coffeescript'><span class='line'><span class="nv">start_time_line: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>  <span class="nv">last_time = </span><span class="k">new</span> <span class="nb">Date</span><span class="p">()</span>
+</span><span class='line'>  <span class="vi">@timeline = </span><span class="nx">setInterval</span><span class="p">(()</span> <span class="o">=&gt;</span>
+</span><span class='line'>    <span class="nv">current_time = </span><span class="k">new</span> <span class="nb">Date</span><span class="p">()</span>
+</span><span class='line'>    <span class="c1"># assume a frame will never last more than 1 second</span>
+</span><span class='line'>    <span class="nv">delta_time = </span><span class="nx">current_time</span><span class="p">.</span><span class="nx">getMilliseconds</span><span class="p">()</span> <span class="o">-</span> <span class="nx">last_time</span><span class="p">.</span><span class="nx">getMilliseconds</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">delta_time</span> <span class="o">+=</span> <span class="mi">1000</span> <span class="k">if</span> <span class="nx">delta_time</span> <span class="o">&lt;</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">@map</span><span class="p">.</span><span class="nx">missiles</span><span class="p">,</span> <span class="nf">(unit) -&gt;</span> <span class="nx">unit</span><span class="p">.</span><span class="nx">integration</span><span class="p">(</span><span class="nx">delta_time</span><span class="p">))</span>
+</span><span class='line'>    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">@map</span><span class="p">.</span><span class="nx">gifts</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">@map</span><span class="p">.</span><span class="nx">tanks</span><span class="p">),</span> <span class="nf">(unit) -&gt;</span> <span class="nx">unit</span><span class="p">.</span><span class="nx">integration</span><span class="p">(</span><span class="nx">delta_time</span><span class="p">))</span>
+</span><span class='line'>    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">@map</span><span class="p">.</span><span class="nx">missiles</span><span class="p">,</span> <span class="nf">(unit) -&gt;</span> <span class="nx">unit</span><span class="p">.</span><span class="nx">integration</span><span class="p">(</span><span class="nx">delta_time</span><span class="p">))</span>
+</span><span class='line'>    <span class="nv">last_time = </span><span class="nx">current_time</span>
+</span><span class='line'>    <span class="nx">@frame_rate</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span class='line'>  <span class="p">,</span> <span class="nb">parseInt</span><span class="p">(</span><span class="mi">1000</span><span class="o">/</span><span class="nx">@fps</span><span class="p">))</span>
+</span><span class='line'>  <span class="c1"># show frame rate</span>
+</span><span class='line'>  <span class="vi">@frame_timeline = </span><span class="nx">setInterval</span><span class="p">(()</span> <span class="o">=&gt;</span>
+</span><span class='line'>    <span class="nx">@frame_rate_label</span><span class="p">.</span><span class="nx">setText</span><span class="p">(</span><span class="nx">@frame_rate</span> <span class="o">+</span> <span class="s">&quot; fps&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@frame_rate = </span><span class="mi">0</span>
+</span><span class='line'>  <span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Path finding</h2>
+
+<p>In many kinds of games, enemies have some degree of AI. They need to move across certain paths or towards some targets.
+Terrains might be different, also they may be changing all the time, we need to do frequent calculation in order to find out the best path.</p>
+
+<p>There are many path finding algorithm, the most common ones are: Dijikstra and A star, while A star is sightly improve Dijikstra by adding a weight base on the &#8220;distance&#8221; of current position to target position.
+Here&#8217;s a wonderful site demonstrate the Path finding algorithm very well: <a href="http://qiao.github.io/PathFinding.js/visual/">PathFinding.js</a>.</p>
+
+<h2>Enemy AI</h2>
+
+<p>AI differs in different kind of games.</p>
+
+<p>For tank, here is the list I considered to be important:</p>
+
+<ul>
+<li>Where to move</li>
+<li>When to fire</li>
+<li>Adjustable AI</li>
+</ul>
+
+
+<h2>Scenes</h2>
+
+<p>A game can be divided into several scenes, these scenes should be easy switchable and be properly designed to have its own preparation and cleaning functions.
+While each scene should be designed as individual as possible, a global storage must be there which can be used by scenes to share data.</p>
+
+<p>For Example, tank game is divided into</p>
+
+<ul>
+<li>welcome scene</li>
+<li>stage scene</li>
+<li>game scene</li>
+<li>report scene</li>
+<li>hi_score scene</li>
+</ul>
+
+
+<p>Each scene has a start/stop method which doing prepare/clearing stuffs. The global storage is the instance of game. Take stage scene as example:</p>
+
+<figure class='code'><figcaption><span>Stage start and stop  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='coffeescript'><span class='line'><span class="k">class</span> <span class="nx">StageScene</span> <span class="k">extends</span> <span class="nx">Scene</span>
+</span><span class='line'>  <span class="nv">constructor: </span><span class="nf">(@game) -&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">(</span><span class="nx">@game</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">@init_stage_nodes</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">start: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">()</span>
+</span><span class='line'>    <span class="vi">@current_stage = </span><span class="nx">@game</span><span class="p">.</span><span class="nx">get_config</span><span class="p">(</span><span class="s">&#39;current_stage&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">@update_stage_label</span><span class="p">()</span>
+</span><span class='line'>    <span class="k">if</span> <span class="nx">@game</span><span class="p">.</span><span class="nx">get_config</span><span class="p">(</span><span class="s">&#39;stage_autostart&#39;</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">setTimeout</span><span class="p">((()</span> <span class="o">=&gt;</span> <span class="nx">@game</span><span class="p">.</span><span class="nx">switch_scene</span><span class="p">(</span><span class="s">&#39;game&#39;</span><span class="p">)),</span> <span class="mi">2000</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="nx">@enable_stage_control</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">stop: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">@disable_stage_control</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">@prepare_for_game_scene</span><span class="p">()</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Stage design and Tiled map</h2>
+
+<p>It&#8217;s possible to design stage by a few lines of code. But normal users can not easily do that.
+I started to think whether a GUI tool exists. And I found Tiled map.</p>
+
+<p>Tiled map is an ecosystem which contains a 2D sprite based map format standard and a set of cross platform GUI tools and cross language map readers and writers.
+Its json definition is so easy readable that I directly read the data from the json export from a tiled output.</p>
+
+<p>Use tiled made adding new stage easy and possible for non-programers to get involved.</p>
+
+<p><img src="http://blog.bencao.it/images/posts/tiled_screen_capture.png"></p>
+
+<h2>User input handling</h2>
+
+<p>The challenge is to transfer simulated user input signals to digital signals.</p>
+
+<p>A variety of user input devices are available now. The most frequently used devices today are keyboard, mouse and touch screen.
+I choosed keyboard. There are 3 types of keyboard events, keyup, keydown, keypress.</p>
+
+<p>Here&#8217;s the code logic I used to handle keyboard input:</p>
+
+<figure class='code'><figcaption><span>Input handling  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+</pre></td><td class='code'><pre><code class='coffeescript'><span class='line'><span class="k">class</span> <span class="nx">UserCommander</span> <span class="k">extends</span> <span class="nx">Commander</span>
+</span><span class='line'>  <span class="nv">constructor: </span><span class="nf">(@map_unit, key_setting) -&gt;</span>
+</span><span class='line'>    <span class="k">super</span><span class="p">(</span><span class="nx">@map_unit</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@key_map = </span><span class="p">{}</span>
+</span><span class='line'>    <span class="k">for</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">code</span> <span class="k">of</span> <span class="nx">key_setting</span>
+</span><span class='line'>      <span class="nx">@key_map</span><span class="p">[</span><span class="nx">code</span><span class="p">]</span> <span class="o">=</span> <span class="nx">key</span>
+</span><span class='line'>    <span class="vi">@key_status = </span><span class="p">{</span>
+</span><span class='line'>      <span class="nv">up: </span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>      <span class="nv">down: </span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>      <span class="nv">left: </span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>      <span class="nv">right: </span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>      <span class="nv">fire: </span><span class="kc">false</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nx">@reset_input</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">reset_input: </span><span class="p">()</span> <span class="nf">-&gt;</span> <span class="vi">@inputs = </span><span class="p">{</span> <span class="nv">up: </span><span class="p">[],</span> <span class="nv">down: </span><span class="p">[],</span> <span class="nv">left: </span><span class="p">[],</span> <span class="nv">right: </span><span class="p">[],</span> <span class="nv">fire: </span><span class="p">[]</span> <span class="p">}</span>
+</span><span class='line'>  <span class="nv">is_pressed: </span><span class="nf">(key) -&gt;</span> <span class="nx">@key_status</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span>
+</span><span class='line'>  <span class="nv">set_pressed: </span><span class="nf">(key, bool) -&gt;</span> <span class="nx">@key_status</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">bool</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">next: </span><span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="nx">@handle_key_up_key_down</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">@handle_key_press</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">handle_key_up_key_down: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="k">for</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">types</span> <span class="k">of</span> <span class="nx">@inputs</span>
+</span><span class='line'>      <span class="k">continue</span> <span class="k">if</span> <span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">types</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">switch</span> <span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span><span class='line'>        <span class="k">when</span> <span class="s">&quot;fire&quot;</span>
+</span><span class='line'>          <span class="nx">@fire</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">when</span> <span class="s">&quot;up&quot;</span><span class="p">,</span> <span class="s">&quot;down&quot;</span><span class="p">,</span> <span class="s">&quot;left&quot;</span><span class="p">,</span> <span class="s">&quot;right&quot;</span>
+</span><span class='line'>          <span class="k">if</span> <span class="nx">@direction_changed</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span><span class='line'>            <span class="nx">@turn</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span><span class='line'>            <span class="k">break</span>
+</span><span class='line'>          <span class="nv">keyup = </span><span class="nx">_</span><span class="p">.</span><span class="nx">contains</span><span class="p">(</span><span class="nx">@inputs</span><span class="p">[</span><span class="nx">key</span><span class="p">],</span> <span class="s">&quot;keyup&quot;</span><span class="p">)</span>
+</span><span class='line'>          <span class="nv">keydown = </span><span class="nx">_</span><span class="p">.</span><span class="nx">contains</span><span class="p">(</span><span class="nx">@inputs</span><span class="p">[</span><span class="nx">key</span><span class="p">],</span> <span class="s">&quot;keydown&quot;</span><span class="p">)</span>
+</span><span class='line'>          <span class="k">if</span> <span class="nx">keydown</span>
+</span><span class='line'>            <span class="nx">@start_move</span><span class="p">()</span>
+</span><span class='line'>          <span class="k">else</span>
+</span><span class='line'>            <span class="nx">@stop_move</span><span class="p">()</span> <span class="k">if</span> <span class="nx">keyup</span>
+</span><span class='line'>    <span class="nx">@reset_input</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">handle_key_press: </span><span class="p">()</span> <span class="nf">-&gt;</span>
+</span><span class='line'>    <span class="k">for</span> <span class="nx">key</span> <span class="k">in</span> <span class="p">[</span><span class="s">&quot;up&quot;</span><span class="p">,</span> <span class="s">&quot;down&quot;</span><span class="p">,</span> <span class="s">&quot;left&quot;</span><span class="p">,</span> <span class="s">&quot;right&quot;</span><span class="p">]</span>
+</span><span class='line'>      <span class="k">if</span> <span class="nx">@is_pressed</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span><span class='line'>        <span class="nx">@turn</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span><span class='line'>        <span class="nx">@start_move</span><span class="p">()</span>
+</span><span class='line'>    <span class="k">if</span> <span class="nx">@is_pressed</span><span class="p">(</span><span class="s">&quot;fire&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="nx">@fire</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nv">add_key_event: </span><span class="nf">(type, key_code) -&gt;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="kc">true</span> <span class="k">if</span> <span class="nx">_</span><span class="p">.</span><span class="nx">isUndefined</span><span class="p">(</span><span class="nx">@key_map</span><span class="p">[</span><span class="nx">key_code</span><span class="p">])</span>
+</span><span class='line'>    <span class="nv">key = </span><span class="nx">@key_map</span><span class="p">[</span><span class="nx">key_code</span><span class="p">]</span>
+</span><span class='line'>    <span class="k">switch</span> <span class="nx">type</span>
+</span><span class='line'>      <span class="k">when</span> <span class="s">&quot;keyup&quot;</span>
+</span><span class='line'>        <span class="nx">@set_pressed</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+</span><span class='line'>        <span class="nx">@inputs</span><span class="p">[</span><span class="nx">key</span><span class="p">].</span><span class="nx">push</span><span class="p">(</span><span class="s">&quot;keyup&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">when</span> <span class="s">&quot;keydown&quot;</span>
+</span><span class='line'>        <span class="nx">@set_pressed</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+</span><span class='line'>        <span class="nx">@inputs</span><span class="p">[</span><span class="nx">key</span><span class="p">].</span><span class="nx">push</span><span class="p">(</span><span class="s">&quot;keydown&quot;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Tunning Numbers</h2>
+
+<p>Most number settings that are obvious were borrowed from origin FC tank game, such as tank life, missile power, terrain properties and so on.</p>
+
+<p>Others such as enemy tank IQ are defined according to feelings. At first there&#8217;s no enemy IQ concept and I found enemies always rush to me in shortest paths, what a nightmare!
+So I have to import an IQ concept which is actually the hundred percent rate that they choose the right target - user&#8217;s home, otherwise they rush to a random area in map.
+Enemies are becoming smarter and smarter along with user entering into later stages.</p>
+
+<h2>Tunning Performance</h2>
+
+<h3>Drawing Library is the most important factor to final performance</h3>
+
+<p>I&#8217;ve tried <a href="http://raphaeljs.com/">Rapheal</a>, <a href="http://ocanvas.org/">oCanvas</a> and <a href="http://kineticjs.com/">Kinetic</a>.
+And Kinetic is my final choice because it&#8217;s base on HTML5 canvas, its API is programer friendly and its performance is much better than oCanvas.</p>
+
+<h3>Improve path finding using advance data structure</h3>
+
+<p>I can&#8217;t find a existing implementation of Binomial Heap in Javascript, so I wrote one.
+It reduces each path finding time from around 700ms to less than 50ms.</p>
+
+<h1>Why I love Coffeescript more than Javascript</h1>
+
+<ul>
+<li>easy and intuitive class inheritance</li>
+<li>simpler array/hash iteration</li>
+<li>@ instead of this</li>
+<li>shorthand for function definition</li>
+</ul>
+
+
+<h1>Unit Test and Continuous Integration</h1>
+
+<p>You really should try the excellent CI tool <a href="https://travis-ci.org/">Travis-CI</a>. It support running unit tests in a variety of environments and is already seamlessly integrated with Github.</p>
+
+<p>The unit test tool I used is QUnit.</p>
+
+<h1>Possible improvements</h1>
+
+<h2>Larger and custom map</h2>
+
+<h2>Multi-user online game</h2>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[How to write a ruby gem]]></title>
+    <link href="http://blog.bencao.it/blog/2013/04/10/how-to-write-a-ruby-gem/"/>
+    <updated>2013-04-10T11:49:00+08:00</updated>
+    <id>http://blog.bencao.it/blog/2013/04/10/how-to-write-a-ruby-gem</id>
+    <content type="html"><![CDATA[<p>Recent days I just wrote an active record extension to make cache optimization easier for company.
+I realized it&#8217;s a useful tool and publish it as a gem might be a good idea.
+So I start writing the gem &#8216;acts_as_method_cacheable&#8217; yesterday afternoon, and I found it&#8217;s an interesting journey.
+The home page is <a href="https://github.com/bencao/acts_as_method_cacheable">here</a>.</p>
+
+<p>Here are the steps I did it:</p>
+
+<h2>create a Gem with bundle</h2>
+
+<p>bundle gem xxx will generate a skeleton of a gem, the gem has a hierachy like this</p>
+
+<p><img src="http://blog.bencao.it/images/posts/gem_hierachy.png"></p>
+
+<h2>write info in gemspec file</h2>
+
+<p>A typical gemspec file looks like this, which is quite straight forward.</p>
+
+<figure class='code'><figcaption><span>&#8220;acts_as_method_cacheable.gemspec&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">Gem</span><span class="p">:</span><span class="ss">:Specification</span><span class="o">.</span><span class="n">new</span> <span class="k">do</span> <span class="o">|</span><span class="n">spec</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">name</span>          <span class="o">=</span> <span class="s2">&quot;acts_as_method_cacheable&quot;</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">version</span>       <span class="o">=</span> <span class="ss">ActsAsMethodCacheable</span><span class="p">:</span><span class="ss">:VERSION</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">authors</span>       <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;Ben Cao&quot;</span><span class="o">]</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">email</span>         <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;benb88@gmail.com&quot;</span><span class="o">]</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">description</span>   <span class="o">=</span> <span class="s2">&quot;Make cache methods on ActiveRecord easy!&quot;</span>
+</span><span class='line'>  <span class="n">spec</span><span class="o">.</span><span class="n">summary</span>       <span class="o">=</span> <span class="s2">&quot;Instead of writing def expensive { @cached_expensive ||= original_expensive }, now you can write instance.cache_method(:expensive) instead. Also support nested &gt;</span>
+</span><span class='line'><span class="s2">  spec.homepage      = &quot;</span><span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">bencao</span><span class="o">/</span><span class="n">acts_as_method_cacheable</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.license       = &quot;</span><span class="no">MIT</span><span class="s2">&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="s2">  spec.files         = `git ls-files`.split($/)</span>
+</span><span class='line'><span class="s2">  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }</span>
+</span><span class='line'><span class="s2">  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})</span>
+</span><span class='line'><span class="s2">  spec.require_paths = [&quot;</span><span class="n">lib</span><span class="s2">&quot;]</span>
+</span><span class='line'>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">bundler</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">1</span><span class="o">.</span><span class="mi">3</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">rake</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">10</span><span class="o">.</span><span class="mi">0</span><span class="o">.</span><span class="mi">4</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">rspec</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">2</span><span class="o">.</span><span class="mi">13</span><span class="o">.</span><span class="mi">0</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">mocha</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">0</span><span class="o">.</span><span class="mi">13</span><span class="o">.</span><span class="mi">3</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">sqlite3</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">1</span><span class="o">.</span><span class="mi">3</span><span class="o">.</span><span class="mi">7</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">pry</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">pry</span><span class="o">-</span><span class="n">theme</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_development_dependency &quot;</span><span class="n">pry</span><span class="o">-</span><span class="n">nav</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_dependency &quot;</span><span class="n">activesupport</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">3</span><span class="o">.</span><span class="mi">2</span><span class="o">.</span><span class="mi">13</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">  spec.add_dependency &quot;</span><span class="n">activerecord</span><span class="s2">&quot;, &quot;</span><span class="o">~&gt;</span> <span class="mi">3</span><span class="o">.</span><span class="mi">2</span><span class="o">.</span><span class="mi">13</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="s2">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note the dependencies section. development_dependencies will only be installed when you want to develop and runs</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>bundle install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>in gem source directory.</p>
+
+<h2>add test</h2>
+
+<p>In order to run spec, I introduced a few development_dependencies, including rspec/sqlite3/pry.
+Then I created &#8220;db&#8221; and &#8220;spec&#8221; folder, where hosts database/spec related files.</p>
+
+<p>Before that, I need a sqlite db and setting up stand alone active record without rails.
+After some digest, I wrote this spec_helper, which setup up active record to a empty db.</p>
+
+<figure class='code'><figcaption><span>&#8220;spec_helper.rb&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;active_support&#39;</span>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;active_record&#39;</span>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;sqlite3&#39;</span>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;pry&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">db_config</span> <span class="o">=</span> <span class="ss">YAML</span><span class="p">:</span><span class="ss">:load</span><span class="p">(</span><span class="no">IO</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;db/database.yml&#39;</span><span class="p">))</span>
+</span><span class='line'><span class="n">db_file</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">[</span><span class="s1">&#39;development&#39;</span><span class="o">][</span><span class="s1">&#39;database&#39;</span><span class="o">]</span>
+</span><span class='line'><span class="no">File</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">db_file</span><span class="p">)</span> <span class="k">if</span> <span class="no">File</span><span class="o">.</span><span class="n">exists?</span><span class="p">(</span><span class="n">db_file</span><span class="p">)</span>
+</span><span class='line'><span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span><span class="o">.</span><span class="n">configurations</span> <span class="o">=</span> <span class="n">db_config</span>
+</span><span class='line'><span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span><span class="o">.</span><span class="n">establish_connection</span><span class="p">(</span><span class="s1">&#39;development&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>For a simple gem like this, I just defined two active record class &#8220;Post&#8221; and &#8220;Comment&#8221; inside my spec file, and use them inside a describe block.
+To make these model working, we need a ActiveRecord::Migration do create these tables.
+The spec might be run several times, also migration will be run several times.
+So you understand why I have to delete the sqlite db file in spec_helper.</p>
+
+<p>Here is how the spec looks like:</p>
+
+<figure class='code'><figcaption><span>&#8220;acts_as_method_cacheable_spec.rb&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;spec_helper.rb&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Schema</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Migration</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">change</span>
+</span><span class='line'>    <span class="n">create_table</span> <span class="ss">:posts</span> <span class="k">do</span> <span class="o">|</span><span class="n">t</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:title</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:date</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">create_table</span> <span class="ss">:comments</span> <span class="k">do</span> <span class="o">|</span><span class="n">t</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:content</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:author</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">string</span> <span class="ss">:date</span>
+</span><span class='line'>      <span class="n">t</span><span class="o">.</span><span class="n">references</span> <span class="ss">:post</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'><span class="no">Schema</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">change</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;acts_as_method_cacheable&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Post</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span>
+</span><span class='line'>  <span class="n">has_many</span> <span class="ss">:comments</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_authors</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:author</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_contents</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:content</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_dates</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:date</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">comment_signatures</span>
+</span><span class='line'>    <span class="n">comments</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:signature</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">acts_as_method_cacheable</span> <span class="ss">:methods</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="ss">:comment_authors</span><span class="p">,</span> <span class="ss">:comment_contents</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">Comment</span> <span class="o">&lt;</span> <span class="ss">ActiveRecord</span><span class="p">:</span><span class="ss">:Base</span>
+</span><span class='line'>  <span class="n">belongs_to</span> <span class="ss">:post</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">signature</span>
+</span><span class='line'>    <span class="n">sub_signature</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">sub_signature</span>
+</span><span class='line'>    <span class="s2">&quot;cool!&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">acts_as_method_cacheable</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">describe</span> <span class="no">ActsAsMethodCacheable</span> <span class="k">do</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">before</span><span class="p">(</span><span class="ss">:each</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>    <span class="vi">@post</span> <span class="o">=</span> <span class="no">Post</span><span class="o">.</span><span class="n">create!</span><span class="p">(</span><span class="ss">:title</span> <span class="o">=&gt;</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="ss">:date</span> <span class="o">=&gt;</span> <span class="s1">&#39;2013-04-04&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@post</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">create!</span><span class="p">(</span><span class="ss">:content</span> <span class="o">=&gt;</span> <span class="s1">&#39;ct1&#39;</span><span class="p">,</span> <span class="ss">:author</span> <span class="o">=&gt;</span> <span class="s1">&#39;ben&#39;</span><span class="p">,</span> <span class="ss">:date</span> <span class="o">=&gt;</span> <span class="s1">&#39;2013-04-05&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@post</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">create!</span><span class="p">(</span><span class="ss">:content</span> <span class="o">=&gt;</span> <span class="s1">&#39;ct2&#39;</span><span class="p">,</span> <span class="ss">:author</span> <span class="o">=&gt;</span> <span class="s1">&#39;feng&#39;</span><span class="p">,</span> <span class="ss">:date</span> <span class="o">=&gt;</span> <span class="s1">&#39;2013-04-06&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@comment1</span><span class="p">,</span> <span class="vi">@comment2</span> <span class="o">=</span> <span class="vi">@post</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">to_a</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">context</span> <span class="s2">&quot;class&quot;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">it</span> <span class="s2">&quot;should return the same result as without cache&quot;</span> <span class="k">do</span>
+</span><span class='line'>      <span class="vi">@post</span><span class="o">.</span><span class="n">comment_authors</span><span class="o">.</span><span class="n">should</span> <span class="o">==</span> <span class="vi">@comment1</span><span class="o">.</span><span class="n">author</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="vi">@comment2</span><span class="o">.</span><span class="n">author</span>
+</span><span class='line'>      <span class="vi">@post</span><span class="o">.</span><span class="n">comment_authors</span><span class="o">.</span><span class="n">should</span> <span class="o">==</span> <span class="vi">@comment1</span><span class="o">.</span><span class="n">author</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="vi">@comment2</span><span class="o">.</span><span class="n">author</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1"># ...</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>build and publish</h2>
+
+<p>build gem is easy.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>gem build acts_as_method_cacheable.gemspec
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>publish gem is easy once you&#8217;ve registered a rubygem.org account and downloaded credentials to localhost.</p>
+
+<figure class='code'><figcaption><span>&#8220;download credentials&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>curl -u USERNAME https://rubygems.org/api/v1/api_key.yaml &gt; ~/.gem/credentials
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>&#8220;publish gem&#8221;  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>gem push acts_as_method_cacheable-0.1.0.gem
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And it&#8217;s all done.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Say hello world to new blog]]></title>
+    <link href="http://blog.bencao.it/blog/2013/03/27/say-hello-world-to-new-blog/"/>
+    <updated>2013-03-27T10:19:00+08:00</updated>
+    <id>http://blog.bencao.it/blog/2013/03/27/say-hello-world-to-new-blog</id>
+    <content type="html"><![CDATA[<h1>Setup</h1>
+
+<p>After clone octopress to local, it&#8217;s easy to deploly to github.</p>
+
+<figure class='code'><figcaption><span>Setup octopress  </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake setup_github_pages
+</span><span class='line'>rake install
+</span><span class='line'>git commit
+</span><span class='line'>rake generate
+</span><span class='line'>rake deploy
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And it&#8217;s done.</p>
+
+<h1>Customized domain name</h1>
+
+<p>I want to redirect my domain <a href="http://blog.bencao.it">blog.bencao.it</a> to the newly setup site.
+It&#8217;s simple, just add a file under <em>source</em> directory named &#8220;CNAME&#8221; with following content</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>blog.bencao.it</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Choose a Theme</h1>
+
+<p>Take <a href="https://github.com/shashankmehta/greyshade">greyshade</a> as example</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nb">cd </span>octopress
+</span><span class='line'>git clone git@github.com:shashankmehta/greyshade.git .themes/greyshade
+</span><span class='line'><span class="nb">echo</span> <span class="s2">&quot;\$greyshade: #AA3;&quot;</span> &gt;&gt; sass/custom/_colors.scss
+</span><span class='line'>rake <span class="s2">&quot;install[greyshade]&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>New post</h1>
+
+<p>Rake is the core of doing things in octopress. To create a post, just</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake new_post<span class="o">[</span><span class="s2">&quot;say hello world to new blog&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>and I can start editing this post, with a YAML header showing meta data for this article.</p>
+
+<h1>Writing Code Block</h1>
+
+<p>As a blog framework for geek, writing code block should be easy. Let&#8217;s say helloworld in Ruby.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">SayHello</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">say</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Hello World!&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Also we can including code from file, which even support download</p>
+
+<figure class='code'><figcaption><span> (tank_index.html)</span> <a href='http://blog.bencao.it/downloads/code/tank_index.html'>download</a></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="cp">&lt;!DOCTYPE html&gt;</span>
+</span><span class='line'><span class="nt">&lt;html&gt;</span>
+</span><span class='line'><span class="nt">&lt;head&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">&quot;content-type&quot;</span> <span class="na">content=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;title&gt;</span>FC Tank - jsFiddle demo<span class="nt">&lt;/title&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/coffeescript.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&#39;text/javascript&#39;</span> <span class="na">src=</span><span class="s">&#39;lib/jquery-2.0.0b1.js&#39;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&#39;text/javascript&#39;</span> <span class="na">src=</span><span class="s">&#39;lib/lodash.min.js&#39;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&#39;text/javascript&#39;</span> <span class="na">src=</span><span class="s">&quot;lib/ocanvas-2.3.1.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;style </span><span class="na">type=</span><span class="s">&#39;text/css&#39;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nf">#resources</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">display</span><span class="o">:</span> <span class="k">none</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nt">&lt;/style&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/coffeescript&quot;</span> <span class="na">src=</span><span class="s">&quot;tank.coffee&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;/head&gt;</span>
+</span><span class='line'><span class="nt">&lt;body&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;img</span> <span class="na">id=</span><span class="s">&quot;resources&quot;</span> <span class="na">alt=</span><span class="s">&quot;tanks&quot;</span> <span class="na">width=</span><span class="s">&quot;400&quot;</span> <span class="na">height=</span><span class="s">&quot;360&quot;</span> <span class="na">src=</span><span class="s">&quot;tanks.png&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;canvas</span> <span class="na">id=</span><span class="s">&quot;canvas&quot;</span> <span class="na">width=</span><span class="s">&quot;520&quot;</span> <span class="na">height=</span><span class="s">&quot;520&quot;</span> <span class="na">tabindex=</span><span class="s">&quot;1&quot;</span><span class="nt">&gt;&lt;/canvas&gt;</span>
+</span><span class='line'><span class="nt">&lt;/body&gt;</span>
+</span><span class='line'><span class="nt">&lt;/html&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Writing Blockquote</h1>
+
+<p>Did you remember the words from Steve Jobs?</p>
+
+<blockquote><p>Stay hungry, stay foolish.</p></blockquote>
+
+
+<h1>Writing Pullquote</h1>
+
+<p><span class='pullquote-right' data-pullquote='DREAM'>
+What is the meaning of life? This is the final question we will face when we are walking on the road.
+Someone says it&#8217;s DREAM, do you agree?
+</span></p>
+
+<h1>Include partial</h1>
+
+<p>Tell you a secret.
+I am a partial.</p>
+
+<h1>Include multi media</h1>
+
+<p>Embed a image is simple</p>
+
+<p><img src="http://placekitten.com/900/200"></p>
+
+<p>Pull it left/right if you wanted.
+<img class="left" src="http://placekitten.com/120/80"></p>
+
+<p>No matter where we wanted to go, here are some guides.</p>
+
+<ul>
+<li>Read books</li>
+<li>Thinking in Mind</li>
+<li>Practice, practice, practice</li>
+</ul>
+
+
+<h1>Preview posts</h1>
+
+<p>To preview posts @localhost, there&#8217;s also a rake task for help:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>rake preview
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+]]></content>
+  </entry>
+  
+</feed>
