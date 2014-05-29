@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Game develop in HTML5 canvas and coffeescript</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="tech life">
+    <link rel="canonical" href="http://blog.bencao.it/2013/05/06/game-develop-in-html5-canvas-and-coffeescript/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">Ben Cao's Blog</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          <a class="page-link" href="/about/">About</a>
+        
+          <a class="page-link" href="/feed.xml"></a>
+        
+          <a class="page-link" href="/"></a>
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <header class="post-header">
+    <h1>Game develop in HTML5 canvas and coffeescript</h1>
+    <p class="meta">May 6, 2013</p>
+  </header>
+
+  <article class="post-content">
+  <p>In the past a few months, I tried to rebuild the classical FC tank game in coffeescript.</p>
+
+<p>The final work is <a href="http://blog.bencao.it/fc_tank">here</a>.</p>
+
+<p><img src="/images/posts/tank_welcome_scene.png" alt="Welcome Scene" />
+<img src="/images/posts/tank_game_scene.png" alt="Game Scene" /></p>
+
+<p>It’s an interesting journey, and following aspects are what I feel worth mentioning.</p>
+
+<h1 id="game-basics">Game Basics</h1>
+
+<h2 id="the-law-of-frame">The law of frame</h2>
+<p>The most foundamental thing before developing a game is to understand FPS - frame per second, and how the game world are running in a frame by frame law.</p>
+
+<p>Before each frame was drawn, game program need to calculate the position, direction, speed, and other attributes for each moving objects(display object) in screen.<br />
+The higher the fps is, the smoother users feel. Typical refresh rate of LCD screen is 60Hz, so it’s good enough to set 60 fps as our goal.<br />
+This set a great challenge for game developers because some parts may sometimes take a lot of CPU time.<br />
+Great game need a great performance optimization.</p>
+
+<p>Here’s the core loop of Tank time line:</p>
+
+<pre><code class="language-coffee">start_time_line: () -&gt;
+  last_time = new Date()
+  @timeline = setInterval(() =&gt;
+    current_time = new Date()
+    # assume a frame will never last more than 1 second
+    delta_time = current_time.getMilliseconds() - last_time.getMilliseconds()
+    delta_time += 1000 if delta_time &lt; 0
+    _.each(@map.missiles, (unit) -&gt; unit.integration(delta_time))
+    _.each(@map.gifts.concat(@map.tanks), (unit) -&gt; unit.integration(delta_time))
+    _.each(@map.missiles, (unit) -&gt; unit.integration(delta_time))
+    last_time = current_time
+    @frame_rate += 1
+  , parseInt(1000/@fps))
+  # show frame rate
+  @frame_timeline = setInterval(() =&gt;
+    @frame_rate_label.setText(@frame_rate + " fps")
+    @frame_rate = 0
+  , 1000)
+</code></pre>
+
+<h2 id="path-finding">Path finding</h2>
+<p>In many kinds of games, enemies have some degree of AI. They need to move across certain paths or towards some targets.<br />
+Terrains might be different, also they may be changing all the time, we need to do frequent calculation in order to find out the best path.</p>
+
+<p>There are many path finding algorithm, the most common ones are: Dijikstra and A star, while A star is sightly improve Dijikstra by adding a weight base on the “distance” of current position to target position.<br />
+Here’s a wonderful site demonstrate the Path finding algorithm very well: <a href="http://qiao.github.io/PathFinding.js/visual/">PathFinding.js</a>.</p>
+
+<h2 id="enemy-ai">Enemy AI</h2>
+
+<p>AI differs in different kind of games.</p>
+
+<p>For tank, here is the list I considered to be important:</p>
+
+<ul>
+  <li>Where to move</li>
+  <li>When to fire</li>
+  <li>Adjustable AI</li>
+</ul>
+
+<h2 id="scenes">Scenes</h2>
+
+<p>A game can be divided into several scenes, these scenes should be easy switchable and be properly designed to have its own preparation and cleaning functions.<br />
+While each scene should be designed as individual as possible, a global storage must be there which can be used by scenes to share data.</p>
+
+<p>For Example, tank game is divided into</p>
+
+<ul>
+  <li>welcome scene</li>
+  <li>stage scene</li>
+  <li>game scene</li>
+  <li>report scene</li>
+  <li>hi_score scene</li>
+</ul>
+
+<p>Each scene has a start/stop method which doing prepare/clearing stuffs. The global storage is the instance of game. Take stage scene as example:</p>
+
+<pre><code class="language-coffee">class StageScene extends Scene
+  constructor: (@game) -&gt;
+    super(@game)
+    @init_stage_nodes()
+
+  start: () -&gt;
+    super()
+    @current_stage = @game.get_config('current_stage')
+    @update_stage_label()
+    if @game.get_config('stage_autostart')
+      setTimeout((() =&gt; @game.switch_scene('game')), 2000)
+    else
+      @enable_stage_control()
+
+  stop: () -&gt;
+    super()
+    @disable_stage_control()
+    @prepare_for_game_scene()
+</code></pre>
+
+<h2 id="stage-design-and-tiled-map">Stage design and Tiled map</h2>
+
+<p>It’s possible to design stage by a few lines of code. But normal users can not easily do that.<br />
+I started to think whether a GUI tool exists. And I found Tiled map.</p>
+
+<p>Tiled map is an ecosystem which contains a 2D sprite based map format standard and a set of cross platform GUI tools and cross language map readers and writers.<br />
+Its json definition is so easy readable that I directly read the data from the json export from a tiled output.</p>
+
+<p>Use tiled made adding new stage easy and possible for non-programers to get involved.</p>
+
+<p><img src="/images/posts/tiled_screen_capture.png" alt="Tiled" /></p>
+
+<h2 id="user-input-handling">User input handling</h2>
+
+<p>The challenge is to transfer simulated user input signals to digital signals.</p>
+
+<p>A variety of user input devices are available now. The most frequently used devices today are keyboard, mouse and touch screen.<br />
+I choosed keyboard. There are 3 types of keyboard events, keyup, keydown, keypress.</p>
+
+<p>Here’s the code logic I used to handle keyboard input:</p>
+
+<pre><code class="language-coffee">class UserCommander extends Commander
+  constructor: (@map_unit, key_setting) -&gt;
+    super(@map_unit)
+    @key_map = {}
+    for key, code of key_setting
+      @key_map[code] = key
+    @key_status = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      fire: false
+    }
+    @reset_input()
+
+  reset_input: () -&gt; @inputs = { up: [], down: [], left: [], right: [], fire: [] }
+  is_pressed: (key) -&gt; @key_status[key]
+  set_pressed: (key, bool) -&gt; @key_status[key] = bool
+
+  next: -&gt;
+    @handle_key_up_key_down()
+    @handle_key_press()
+
+  handle_key_up_key_down: () -&gt;
+    for key, types of @inputs
+      continue if _.isEmpty(types)
+      switch (key)
+        when "fire"
+          @fire()
+        when "up", "down", "left", "right"
+          if @direction_changed(key)
+            @turn(key)
+            break
+          keyup = _.contains(@inputs[key], "keyup")
+          keydown = _.contains(@inputs[key], "keydown")
+          if keydown
+            @start_move()
+          else
+            @stop_move() if keyup
+    @reset_input()
+
+  handle_key_press: () -&gt;
+    for key in ["up", "down", "left", "right"]
+      if @is_pressed(key)
+        @turn(key)
+        @start_move()
+    if @is_pressed("fire")
+      @fire()
+
+  add_key_event: (type, key_code) -&gt;
+    return true if _.isUndefined(@key_map[key_code])
+    key = @key_map[key_code]
+    switch type
+      when "keyup"
+        @set_pressed(key, false)
+        @inputs[key].push("keyup")
+      when "keydown"
+        @set_pressed(key, true)
+        @inputs[key].push("keydown")
+</code></pre>
+
+<h2 id="tunning-numbers">Tunning Numbers</h2>
+
+<p>Most number settings that are obvious were borrowed from origin FC tank game, such as tank life, missile power, terrain properties and so on.</p>
+
+<p>Others such as enemy tank IQ are defined according to feelings. At first there’s no enemy IQ concept and I found enemies always rush to me in shortest paths, what a nightmare!<br />
+So I have to import an IQ concept which is actually the hundred percent rate that they choose the right target - user’s home, otherwise they rush to a random area in map.<br />
+Enemies are becoming smarter and smarter along with user entering into later stages.</p>
+
+<h2 id="tunning-performance">Tunning Performance</h2>
+
+<h3 id="drawing-library-is-the-most-important-factor-to-final-performance">Drawing Library is the most important factor to final performance</h3>
+
+<p>I’ve tried <a href="http://raphaeljs.com/">Rapheal</a>, <a href="http://ocanvas.org/">oCanvas</a> and <a href="http://kineticjs.com/">Kinetic</a>.<br />
+And Kinetic is my final choice because it’s base on HTML5 canvas, its API is programer friendly and its performance is much better than oCanvas.</p>
+
+<h3 id="improve-path-finding-using-advance-data-structure">Improve path finding using advance data structure</h3>
+
+<p>I can’t find a existing implementation of Binomial Heap in Javascript, so I wrote one.<br />
+It reduces each path finding time from around 700ms to less than 50ms.</p>
+
+<h2 id="why-i-love-coffeescript-more-than-javascript">Why I love Coffeescript more than Javascript</h2>
+
+<ul>
+  <li>easy and intuitive class inheritance</li>
+  <li>simpler array/hash iteration</li>
+  <li>@ instead of this</li>
+  <li>shorthand for function definition</li>
+</ul>
+
+<h2 id="unit-test-and-continuous-integration">Unit Test and Continuous Integration</h2>
+
+<p>You really should try the excellent CI tool <a href="https://travis-ci.org/">Travis-CI</a>. It support running unit tests in a variety of environments and is already seamlessly integrated with Github.</p>
+
+<p>The unit test tool I used is QUnit.</p>
+
+<h2 id="possible-improvements">Possible improvements</h2>
+
+<ul>
+  <li>Larger and custom map</li>
+  <li>Multi-user online game</li>
+</ul>
+
+  </article>
+
+</div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <h2 class="footer-heading">Ben Cao's Blog</h2>
+
+    <div class="footer-col-1 column">
+      <ul>
+        <li>Ben Cao's Blog</li>
+        <li><a href="mailto:benb88@gmail.com">benb88@gmail.com</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/bencao">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+            <span class="username">bencao</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">tech life</p>
+    </div>
+
+  </div>
+
+</footer>
+
+
+    </body>
+</html>

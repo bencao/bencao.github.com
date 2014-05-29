@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Some thoughts about coding</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="tech life">
+    <link rel="canonical" href="http://blog.bencao.it/2014/05/29/some-thoughts-about-coding/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">Ben Cao's Blog</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          <a class="page-link" href="/about/">About</a>
+        
+          <a class="page-link" href="/feed.xml"></a>
+        
+          <a class="page-link" href="/"></a>
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <header class="post-header">
+    <h1>Some thoughts about coding</h1>
+    <p class="meta">May 29, 2014</p>
+  </header>
+
+  <article class="post-content">
+  <p>While browsing code these days, reading some wonderful pieces and some awful lines, some thoughts came into my mind.</p>
+
+<p>Let’s start from some code smells first.</p>
+
+<h2 id="smell-1---hide-complexitydetail-in-a-bad-way">Smell 1 - Hide complexity/detail in a bad way</h2>
+
+<h3 id="case-1">Case 1:</h3>
+
+<pre><code class="language-ruby">check_point!(:beauty)
+</code></pre>
+
+<p>What does it mean here? I have no choice but follow to the actual check_beauty method to see what happens.<br />
+Why not</p>
+
+<pre><code class="language-ruby">should_have!(:perfect_shape)
+should_not_have!(:big_mouth)
+should_be!(:tender)
+should_not_be!(:angry)
+</code></pre>
+
+<p>It’s low efficient to switch between different stack levels when reading code, human brain isn’t designed for that</p>
+
+<h3 id="case-2">Case 2:</h3>
+
+<pre><code class="language-ruby">if placement_status_active?
+  register_nielsen_placements
+end
+</code></pre>
+
+<p>All active placement will register nielsen placement? No matter it is rating base buying or not? Sounds buggy. But actually here is register_niesen_placements</p>
+
+<pre><code class="language-ruby">def register_nielsen_placements
+  return if template?
+  return unless rating_based_buying_enabled?
+  nielsen_campaign = NetworkNielsenCampaign.where(:mrm_campaign_id =&gt; self.campaign.id).first
+  return if nielsen_campaign.blank?
+  # ignore more
+end
+</code></pre>
+
+<p>Why not</p>
+
+<pre><code class="language-ruby">if rating_base_buying_enabled? &amp;&amp; placement_status_active?
+  register_nielsen_placements
+end
+</code></pre>
+
+<p>Don’t frighten your reader.</p>
+
+<h2 id="smell-2---expose-complexitydetail-in-a-bad-way">Smell 2 - Expose complexity/detail in a bad way</h2>
+
+<h3 id="case-1-1">Case 1:</h3>
+
+<pre><code class="language-ruby">@ad_unit_nodes.each do | ad_unit_node |
+  if ad_unit_node.is_display? &amp;&amp; ad_unit_node.ad_unit.width &amp;&amp; ad_unit_node.ad_unit.height
+    @creatives.each do | creative |
+      if creative.param_only? &amp;&amp; creative.alive_creative_renditions.size &gt; 0
+        ad_unit_dimension = ad_unit_node.ad_unit.width.to_s + "*" + ad_unit_node.ad_unit.height.to_s
+        creative_dimension = creative.alive_creative_renditions[0].width.to_s + "*" + creative.alive_creative_renditions[0].height.to_s
+        if ad_unit_dimension != creative_dimension
+          errors.push( I18n.t("campaign_mgmt.param_only_w_h_not_match_ad_unit", :ad_unit =&gt; "#{ad_unit_node.ad_unit.name}(##{ad_unit_node.id})" , :creative =&gt;"#{creative.name}(##{creative.id})" ))
+        end
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>Can you read it? We have code wrapped inside 2 each and 3 if.<br />
+Why not</p>
+
+<pre><code class="language-ruby">@ad_unit_nodes.each do |ad_unit_node|
+  @creatives.each{|creative| creative.should_have!(:the_same_dimension_as_ad_unit)} if ad_unit_node.is_valid_display?
+end
+</code></pre>
+
+<p>Your reader might not know the business logic detail as much as you are. Assume them to be new hires.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Ok, did you notice what I’m talking here is all about hide/expose complexity?</p>
+
+<p>It’s my understanding, good code is an elegant expressing of the concept in your mind, for each level(Class, public method, private helper method) the complexity/detail has been exposed to the most proper level, no more no less.</p>
+
+<p>With this principle in mind, the most difficult tasks for coding are now answering those questions:</p>
+
+<ul>
+  <li>Which level is most appropriate for putting info the concept?</li>
+  <li>Does this Class have the proper responsibility, isn’t it handling too much or too few?</li>
+  <li>Any separation needed for that complex Class or method?</li>
+</ul>
+
+<p>So finally coding is becoming an art. Just as how a beauty dresses, too much is not fashion but also too few is not widely acceptable(although some bachelor will like it).</p>
+
+  </article>
+
+</div>
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <h2 class="footer-heading">Ben Cao's Blog</h2>
+
+    <div class="footer-col-1 column">
+      <ul>
+        <li>Ben Cao's Blog</li>
+        <li><a href="mailto:benb88@gmail.com">benb88@gmail.com</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/bencao">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+            <span class="username">bencao</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">tech life</p>
+    </div>
+
+  </div>
+
+</footer>
+
+
+    </body>
+</html>

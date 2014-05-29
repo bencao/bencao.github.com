@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ben Cao's Blog</title>
+    <description>tech life</description>
+    <link>http://blog.bencao.it/</link>
+    <atom:link href="http://blog.bencao.it/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>Some thoughts about coding</title>
+        <description>&lt;p&gt;While browsing code these days, reading some wonderful pieces and some awful lines, some thoughts came into my mind.&lt;/p&gt;
+
+&lt;p&gt;Let’s start from some code smells first.&lt;/p&gt;
+
+&lt;h2 id=&quot;smell-1---hide-complexitydetail-in-a-bad-way&quot;&gt;Smell 1 - Hide complexity/detail in a bad way&lt;/h2&gt;
+
+&lt;h3 id=&quot;case-1&quot;&gt;Case 1:&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;check_point!(:beauty)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;What does it mean here? I have no choice but follow to the actual check_beauty method to see what happens.&lt;br /&gt;
+Why not&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;should_have!(:perfect_shape)
+should_not_have!(:big_mouth)
+should_be!(:tender)
+should_not_be!(:angry)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It’s low efficient to switch between different stack levels when reading code, human brain isn’t designed for that&lt;/p&gt;
+
+&lt;h3 id=&quot;case-2&quot;&gt;Case 2:&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;if placement_status_active?
+  register_nielsen_placements
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;All active placement will register nielsen placement? No matter it is rating base buying or not? Sounds buggy. But actually here is register_niesen_placements&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;def register_nielsen_placements
+  return if template?
+  return unless rating_based_buying_enabled?
+  nielsen_campaign = NetworkNielsenCampaign.where(:mrm_campaign_id =&amp;gt; self.campaign.id).first
+  return if nielsen_campaign.blank?
+  # ignore more
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Why not&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;if rating_base_buying_enabled? &amp;amp;&amp;amp; placement_status_active?
+  register_nielsen_placements
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Don’t frighten your reader.&lt;/p&gt;
+
+&lt;h2 id=&quot;smell-2---expose-complexitydetail-in-a-bad-way&quot;&gt;Smell 2 - Expose complexity/detail in a bad way&lt;/h2&gt;
+
+&lt;h3 id=&quot;case-1-1&quot;&gt;Case 1:&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;@ad_unit_nodes.each do | ad_unit_node |
+  if ad_unit_node.is_display? &amp;amp;&amp;amp; ad_unit_node.ad_unit.width &amp;amp;&amp;amp; ad_unit_node.ad_unit.height
+    @creatives.each do | creative |
+      if creative.param_only? &amp;amp;&amp;amp; creative.alive_creative_renditions.size &amp;gt; 0
+        ad_unit_dimension = ad_unit_node.ad_unit.width.to_s + &quot;*&quot; + ad_unit_node.ad_unit.height.to_s
+        creative_dimension = creative.alive_creative_renditions[0].width.to_s + &quot;*&quot; + creative.alive_creative_renditions[0].height.to_s
+        if ad_unit_dimension != creative_dimension
+          errors.push( I18n.t(&quot;campaign_mgmt.param_only_w_h_not_match_ad_unit&quot;, :ad_unit =&amp;gt; &quot;#{ad_unit_node.ad_unit.name}(##{ad_unit_node.id})&quot; , :creative =&amp;gt;&quot;#{creative.name}(##{creative.id})&quot; ))
+        end
+      end
+    end
+  end
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Can you read it? We have code wrapped inside 2 each and 3 if.&lt;br /&gt;
+Why not&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;@ad_unit_nodes.each do |ad_unit_node|
+  @creatives.each{|creative| creative.should_have!(:the_same_dimension_as_ad_unit)} if ad_unit_node.is_valid_display?
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Your reader might not know the business logic detail as much as you are. Assume them to be new hires.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Ok, did you notice what I’m talking here is all about hide/expose complexity?&lt;/p&gt;
+
+&lt;p&gt;It’s my understanding, good code is an elegant expressing of the concept in your mind, for each level(Class, public method, private helper method) the complexity/detail has been exposed to the most proper level, no more no less.&lt;/p&gt;
+
+&lt;p&gt;With this principle in mind, the most difficult tasks for coding are now answering those questions:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Which level is most appropriate for putting info the concept?&lt;/li&gt;
+  &lt;li&gt;Does this Class have the proper responsibility, isn’t it handling too much or too few?&lt;/li&gt;
+  &lt;li&gt;Any separation needed for that complex Class or method?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;So finally coding is becoming an art. Just as how a beauty dresses, too much is not fashion but also too few is not widely acceptable(although some bachelor will like it).&lt;/p&gt;
+</description>
+        <pubDate>Thu, 29 May 2014 15:33:00 +0800</pubDate>
+        <link>http://blog.bencao.it/2014/05/29/some-thoughts-about-coding/</link>
+        <guid isPermaLink="true">http://blog.bencao.it/2014/05/29/some-thoughts-about-coding/</guid>
+      </item>
+    
+      <item>
+        <title>Way to speed up rails apps</title>
+        <description>&lt;p&gt;Performance is always a bottleneck for rails apps.&lt;br /&gt;
+Why?&lt;br /&gt;
+Maybe calling a method in other active records is way too easy, so we’re apt to call more, and delegate more.&lt;br /&gt;
+But call and delegate is not free, it’s db operations under the hood, which are expensive.&lt;br /&gt;
+Besides that, it’s very common that we bind many ‘before’ and ‘after’ callbacks on active record, which results in more and more CPU time during load.&lt;br /&gt;
+To sum up, as rails developers, we’re very likely to encounter performance issue, so it’s better to equip ourselves with some swiss army knife.&lt;/p&gt;
+
+&lt;h2 id=&quot;find-out-the-problem&quot;&gt;Find out the problem&lt;/h2&gt;
+
+&lt;p&gt;Before start optimizing something, the first step is to find out what the problem is.&lt;/p&gt;
+
+&lt;p&gt;Ok, it’s not a rocket science since we have ruby prof gem in hand.&lt;/p&gt;
+
+&lt;h3 id=&quot;ruby-prof&quot;&gt;Ruby Prof&lt;/h3&gt;
+
+&lt;p&gt;Some background is needed here - you’d better go &lt;a href=&quot;https://github.com/ruby-prof/ruby-prof&quot;&gt;ruby prof website&lt;/a&gt; to know more.&lt;br /&gt;
+With the help of ruby prof, you can easily wrap some pieces of your code, then trigger one run, and you will see the performance data for this piece of code including:&lt;br /&gt;
+- time percentage spent by each sub function call&lt;br /&gt;
+- the call counts for each function&lt;/p&gt;
+
+&lt;p&gt;I recommend using the “RubyProf::GraphHtmlPrinter - Creates a call graph report in HTML (separate files per thread)” to print result to a html page.&lt;/p&gt;
+
+&lt;h2 id=&quot;cache&quot;&gt;Cache&lt;/h2&gt;
+
+&lt;p&gt;We can see from ruby prof result that some methods were consuming more resource that we’d thought.&lt;br /&gt;
+One possibility is it’s called too many times.&lt;/p&gt;
+
+&lt;p&gt;If one method is called many times and for each time it’s called, it returns the same result, it’s the scenario that we can cache the return of method.&lt;br /&gt;
+Before doing cache, please remember cache should not break the system, and should have the minimal intrusiveness as possible.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-naive-way&quot;&gt;the naive way&lt;/h3&gt;
+
+&lt;p&gt;Just save method result to a instance variable, this can be achieved by wrapping old model method, as following:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;# BEFORE
+def expensive_method
+  sleep 30
+end
+
+# AFTER
+def expensive_method
+  @expensive_method_result ||= _expensive_method
+end
+
+def _expensive_method
+  sleep 30
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It works and observably improved total time. But there’s some disadvantages:&lt;br /&gt;
+- when _expensive_method returns false, the optimization is totally useless&lt;br /&gt;
+- it invade the original codes, make it harder to read, and will potentially break the specs, this can be a big problem to a large project&lt;/p&gt;
+
+&lt;h3 id=&quot;a-improved-way&quot;&gt;a improved way&lt;/h3&gt;
+
+&lt;p&gt;Assume we can write like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;# define methods need to cache in class
+acts_as_method_cacheable :methods =&amp;gt; [:expensive_method, :another_expensive_method]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In this way we achieved two goals:&lt;br /&gt;
+- we can handle the case when result is false without writing if/else everywhere&lt;br /&gt;
+- it’s less intrusive, even we can rewrite ‘reload’ method to clear the cache, so it’s easy to handle cached method in specs&lt;/p&gt;
+
+&lt;h3 id=&quot;ultimate-way&quot;&gt;ultimate way&lt;/h3&gt;
+
+&lt;p&gt;If a method is called for a feature only, do we need to cache it for other cases?&lt;br /&gt;
+Yes, No. We need a way that can do cache on demand, like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;@post.cache_method(:expensive_method)
+10.times { @post.expensive_method }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Got it. You can cache on a instance instead in class level.&lt;br /&gt;
+And where should we write the codes to do cache_method? The answer can be chosen from Model, View, Controller.&lt;br /&gt;
+The answer is Controller:&lt;br /&gt;
+- only in controller you knowing exactly which model methods will be called&lt;br /&gt;
+- and in controller the impact is partial, anything you’re doing with cache won’t break other actions, and specs&lt;/p&gt;
+
+&lt;h3 id=&quot;do-we-have-helper-methods-mentioned-above-as-a-gem&quot;&gt;do we have helper methods mentioned above as a gem?&lt;/h3&gt;
+
+&lt;p&gt;Yes, we do. &lt;a href=&quot;https://github.com/bencao/acts_as_method_cacheable&quot;&gt;Go there&lt;/a&gt; to learn more.&lt;/p&gt;
+
+&lt;h2 id=&quot;improve-algorithm&quot;&gt;Improve algorithm&lt;/h2&gt;
+
+&lt;p&gt;If you’ve tried the above ways and the performance is still not reasonable, you can consider to rewrite some key component in a higher efficient algorithm.&lt;br /&gt;
+Take copy a active record with its association as an example.&lt;br /&gt;
+We have a grade with many teachers, we need to copy this grade, and its teachers, having the same relationships between grade and teachers.&lt;/p&gt;
+
+&lt;h3 id=&quot;traditional-way&quot;&gt;traditional way&lt;/h3&gt;
+
+&lt;p&gt;Let’s first do this in a traditional way.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;copied_grade = @grade.dup.save!
+@grade.teachers.each do |teacher|
+  copied_teacher = teacher.dup.save!
+  copied_grade.teachers &amp;lt;&amp;lt; copied_teacher
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Any problem to this piece of code? From logic it’s perfectly true.&lt;br /&gt;
+But let’s switch to DB perspective:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;# INSERT INTO `grade` (name) VALUES (&quot;grade&quot;)
+# INSERT INTO `teacher` (name) VALUES (&quot;teacher&quot;)
+# INSERT INTO `grade_teacher_assignment` (grade_id, teacher_id) VALUES (10, 13)
+# INSERT INTO `teacher` (name) VALUES (&quot;teacher&quot;)
+# INSERT INTO `grade_teacher_assignment` (grade_id, teacher_id) VALUES (10, 13)
+# ...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yes, it results in too many inserts. Is it possible to insert all teachers in one ‘INSERT’ statement?&lt;br /&gt;
+Seems some foundamental changes are needed.&lt;/p&gt;
+
+&lt;h3 id=&quot;alternative-way&quot;&gt;alternative way&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/bencao/acts_as_brand_new_copy&quot;&gt;Go there&lt;/a&gt; you can see an alternative way of doing copy.&lt;/p&gt;
+
+&lt;p&gt;Not only efficiency is improved, code also became cleaner.&lt;br /&gt;
+So remember, when time comes, write you own algorithm to save the world!&lt;/p&gt;
+
+&lt;h2 id=&quot;improve-gc&quot;&gt;Improve GC&lt;/h2&gt;
+
+&lt;p&gt;Gabage colletor for ruby(MRI) works in a ‘Stop the world, Mark-Sweep’ way.&lt;br /&gt;
+That means, all ruby code will stop being executed and all CPU resources are used to find out gabage objects and free the memory.&lt;br /&gt;
+To reduce GC time, we can work from two directions:&lt;br /&gt;
+- see how we can generate less objects in app&lt;br /&gt;
+- see how we can adjust GC make it run faster&lt;/p&gt;
+
+&lt;h3 id=&quot;generate-less-objects-in-app&quot;&gt;generate less objects in app&lt;/h3&gt;
+
+&lt;p&gt;When you write ‘@grade.teachers’ you’re creating dozens of ‘Teacher’ and ‘GradeTeacherAssignment’ active record objects.&lt;br /&gt;
+Say if we need teacher ids only we can write ‘@grade.grade_teacher_assignments.map(&amp;amp;:teacher_id)’, this save us from constructing and GCing ‘Teacher’ objects.&lt;/p&gt;
+
+&lt;p&gt;Another one is the above copy sample. Brand new copy create only a half active record objects comparing to naive one, it uses hash instead.&lt;br /&gt;
+So we can always try to find rooms for cutting unnecessary object constructions.&lt;/p&gt;
+
+&lt;h3 id=&quot;adjust-gc-make-it-run-faster&quot;&gt;adjust GC make it run faster&lt;/h3&gt;
+
+&lt;p&gt;Digging into &lt;a href=&quot;https://github.com/ruby/ruby/blob/trunk/gc.c&quot;&gt;ruby GC implementation&lt;/a&gt; you will find that there’re several tunable params to control its behaviours.&lt;br /&gt;
+For example, I used these settings in my local machine which accelerates visiting speed about 50%
+&lt;code&gt;bash
+export RUBY_HEAP_MIN_SLOTS=300000
+export RUBY_HEAP_SLOTS_INCREMENT=100000
+export RUBY_HEAP_SLOTS_GROWTH_FACTOR=1
+export RUBY_HEAP_FREE_MIN=100000
+export RUBY_GC_MALLOC_LIMIT=30000000
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Many articles could be found in internet, for example &lt;a href=&quot;http://blog.newrelic.com/2012/10/23/eating-the-1-9-elephant/&quot;&gt;Eating the 1.9 elephant&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;upgrade-to-latest-ruby-version&quot;&gt;Upgrade to latest ruby version&lt;/h2&gt;
+
+&lt;p&gt;Ruby is always improving. Later version has many improvements that can speed up your program, such as GC redesign.&lt;br /&gt;
+Just keep ruby version up to date you could benifit from the effort of whole community.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;I hope the above tips helps you improve your rails apps’ performance.&lt;br /&gt;
+Beside of technics, the more important thing is&lt;br /&gt;
+- the need for speed&lt;br /&gt;
+- keep an open eye on latest community progress, for example trending repos on github&lt;/p&gt;
+
+&lt;p&gt;Thank you for reading!&lt;/p&gt;
+</description>
+        <pubDate>Sun, 03 Nov 2013 21:51:00 +0800</pubDate>
+        <link>http://blog.bencao.it/2013/11/03/speed-up-rails-app/</link>
+        <guid isPermaLink="true">http://blog.bencao.it/2013/11/03/speed-up-rails-app/</guid>
+      </item>
+    
+      <item>
+        <title>Game develop in HTML5 canvas and coffeescript</title>
+        <description>&lt;p&gt;In the past a few months, I tried to rebuild the classical FC tank game in coffeescript.&lt;/p&gt;
+
+&lt;p&gt;The final work is &lt;a href=&quot;http://blog.bencao.it/fc_tank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/tank_welcome_scene.png&quot; alt=&quot;Welcome Scene&quot; /&gt;
+&lt;img src=&quot;/images/posts/tank_game_scene.png&quot; alt=&quot;Game Scene&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;It’s an interesting journey, and following aspects are what I feel worth mentioning.&lt;/p&gt;
+
+&lt;h1 id=&quot;game-basics&quot;&gt;Game Basics&lt;/h1&gt;
+
+&lt;h2 id=&quot;the-law-of-frame&quot;&gt;The law of frame&lt;/h2&gt;
+&lt;p&gt;The most foundamental thing before developing a game is to understand FPS - frame per second, and how the game world are running in a frame by frame law.&lt;/p&gt;
+
+&lt;p&gt;Before each frame was drawn, game program need to calculate the position, direction, speed, and other attributes for each moving objects(display object) in screen.&lt;br /&gt;
+The higher the fps is, the smoother users feel. Typical refresh rate of LCD screen is 60Hz, so it’s good enough to set 60 fps as our goal.&lt;br /&gt;
+This set a great challenge for game developers because some parts may sometimes take a lot of CPU time.&lt;br /&gt;
+Great game need a great performance optimization.&lt;/p&gt;
+
+&lt;p&gt;Here’s the core loop of Tank time line:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-coffee&quot;&gt;start_time_line: () -&amp;gt;
+  last_time = new Date()
+  @timeline = setInterval(() =&amp;gt;
+    current_time = new Date()
+    # assume a frame will never last more than 1 second
+    delta_time = current_time.getMilliseconds() - last_time.getMilliseconds()
+    delta_time += 1000 if delta_time &amp;lt; 0
+    _.each(@map.missiles, (unit) -&amp;gt; unit.integration(delta_time))
+    _.each(@map.gifts.concat(@map.tanks), (unit) -&amp;gt; unit.integration(delta_time))
+    _.each(@map.missiles, (unit) -&amp;gt; unit.integration(delta_time))
+    last_time = current_time
+    @frame_rate += 1
+  , parseInt(1000/@fps))
+  # show frame rate
+  @frame_timeline = setInterval(() =&amp;gt;
+    @frame_rate_label.setText(@frame_rate + &quot; fps&quot;)
+    @frame_rate = 0
+  , 1000)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;path-finding&quot;&gt;Path finding&lt;/h2&gt;
+&lt;p&gt;In many kinds of games, enemies have some degree of AI. They need to move across certain paths or towards some targets.&lt;br /&gt;
+Terrains might be different, also they may be changing all the time, we need to do frequent calculation in order to find out the best path.&lt;/p&gt;
+
+&lt;p&gt;There are many path finding algorithm, the most common ones are: Dijikstra and A star, while A star is sightly improve Dijikstra by adding a weight base on the “distance” of current position to target position.&lt;br /&gt;
+Here’s a wonderful site demonstrate the Path finding algorithm very well: &lt;a href=&quot;http://qiao.github.io/PathFinding.js/visual/&quot;&gt;PathFinding.js&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;enemy-ai&quot;&gt;Enemy AI&lt;/h2&gt;
+
+&lt;p&gt;AI differs in different kind of games.&lt;/p&gt;
+
+&lt;p&gt;For tank, here is the list I considered to be important:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Where to move&lt;/li&gt;
+  &lt;li&gt;When to fire&lt;/li&gt;
+  &lt;li&gt;Adjustable AI&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;scenes&quot;&gt;Scenes&lt;/h2&gt;
+
+&lt;p&gt;A game can be divided into several scenes, these scenes should be easy switchable and be properly designed to have its own preparation and cleaning functions.&lt;br /&gt;
+While each scene should be designed as individual as possible, a global storage must be there which can be used by scenes to share data.&lt;/p&gt;
+
+&lt;p&gt;For Example, tank game is divided into&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;welcome scene&lt;/li&gt;
+  &lt;li&gt;stage scene&lt;/li&gt;
+  &lt;li&gt;game scene&lt;/li&gt;
+  &lt;li&gt;report scene&lt;/li&gt;
+  &lt;li&gt;hi_score scene&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Each scene has a start/stop method which doing prepare/clearing stuffs. The global storage is the instance of game. Take stage scene as example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-coffee&quot;&gt;class StageScene extends Scene
+  constructor: (@game) -&amp;gt;
+    super(@game)
+    @init_stage_nodes()
+
+  start: () -&amp;gt;
+    super()
+    @current_stage = @game.get_config('current_stage')
+    @update_stage_label()
+    if @game.get_config('stage_autostart')
+      setTimeout((() =&amp;gt; @game.switch_scene('game')), 2000)
+    else
+      @enable_stage_control()
+
+  stop: () -&amp;gt;
+    super()
+    @disable_stage_control()
+    @prepare_for_game_scene()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;stage-design-and-tiled-map&quot;&gt;Stage design and Tiled map&lt;/h2&gt;
+
+&lt;p&gt;It’s possible to design stage by a few lines of code. But normal users can not easily do that.&lt;br /&gt;
+I started to think whether a GUI tool exists. And I found Tiled map.&lt;/p&gt;
+
+&lt;p&gt;Tiled map is an ecosystem which contains a 2D sprite based map format standard and a set of cross platform GUI tools and cross language map readers and writers.&lt;br /&gt;
+Its json definition is so easy readable that I directly read the data from the json export from a tiled output.&lt;/p&gt;
+
+&lt;p&gt;Use tiled made adding new stage easy and possible for non-programers to get involved.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/tiled_screen_capture.png&quot; alt=&quot;Tiled&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;user-input-handling&quot;&gt;User input handling&lt;/h2&gt;
+
+&lt;p&gt;The challenge is to transfer simulated user input signals to digital signals.&lt;/p&gt;
+
+&lt;p&gt;A variety of user input devices are available now. The most frequently used devices today are keyboard, mouse and touch screen.&lt;br /&gt;
+I choosed keyboard. There are 3 types of keyboard events, keyup, keydown, keypress.&lt;/p&gt;
+
+&lt;p&gt;Here’s the code logic I used to handle keyboard input:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-coffee&quot;&gt;class UserCommander extends Commander
+  constructor: (@map_unit, key_setting) -&amp;gt;
+    super(@map_unit)
+    @key_map = {}
+    for key, code of key_setting
+      @key_map[code] = key
+    @key_status = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      fire: false
+    }
+    @reset_input()
+
+  reset_input: () -&amp;gt; @inputs = { up: [], down: [], left: [], right: [], fire: [] }
+  is_pressed: (key) -&amp;gt; @key_status[key]
+  set_pressed: (key, bool) -&amp;gt; @key_status[key] = bool
+
+  next: -&amp;gt;
+    @handle_key_up_key_down()
+    @handle_key_press()
+
+  handle_key_up_key_down: () -&amp;gt;
+    for key, types of @inputs
+      continue if _.isEmpty(types)
+      switch (key)
+        when &quot;fire&quot;
+          @fire()
+        when &quot;up&quot;, &quot;down&quot;, &quot;left&quot;, &quot;right&quot;
+          if @direction_changed(key)
+            @turn(key)
+            break
+          keyup = _.contains(@inputs[key], &quot;keyup&quot;)
+          keydown = _.contains(@inputs[key], &quot;keydown&quot;)
+          if keydown
+            @start_move()
+          else
+            @stop_move() if keyup
+    @reset_input()
+
+  handle_key_press: () -&amp;gt;
+    for key in [&quot;up&quot;, &quot;down&quot;, &quot;left&quot;, &quot;right&quot;]
+      if @is_pressed(key)
+        @turn(key)
+        @start_move()
+    if @is_pressed(&quot;fire&quot;)
+      @fire()
+
+  add_key_event: (type, key_code) -&amp;gt;
+    return true if _.isUndefined(@key_map[key_code])
+    key = @key_map[key_code]
+    switch type
+      when &quot;keyup&quot;
+        @set_pressed(key, false)
+        @inputs[key].push(&quot;keyup&quot;)
+      when &quot;keydown&quot;
+        @set_pressed(key, true)
+        @inputs[key].push(&quot;keydown&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;tunning-numbers&quot;&gt;Tunning Numbers&lt;/h2&gt;
+
+&lt;p&gt;Most number settings that are obvious were borrowed from origin FC tank game, such as tank life, missile power, terrain properties and so on.&lt;/p&gt;
+
+&lt;p&gt;Others such as enemy tank IQ are defined according to feelings. At first there’s no enemy IQ concept and I found enemies always rush to me in shortest paths, what a nightmare!&lt;br /&gt;
+So I have to import an IQ concept which is actually the hundred percent rate that they choose the right target - user’s home, otherwise they rush to a random area in map.&lt;br /&gt;
+Enemies are becoming smarter and smarter along with user entering into later stages.&lt;/p&gt;
+
+&lt;h2 id=&quot;tunning-performance&quot;&gt;Tunning Performance&lt;/h2&gt;
+
+&lt;h3 id=&quot;drawing-library-is-the-most-important-factor-to-final-performance&quot;&gt;Drawing Library is the most important factor to final performance&lt;/h3&gt;
+
+&lt;p&gt;I’ve tried &lt;a href=&quot;http://raphaeljs.com/&quot;&gt;Rapheal&lt;/a&gt;, &lt;a href=&quot;http://ocanvas.org/&quot;&gt;oCanvas&lt;/a&gt; and &lt;a href=&quot;http://kineticjs.com/&quot;&gt;Kinetic&lt;/a&gt;.&lt;br /&gt;
+And Kinetic is my final choice because it’s base on HTML5 canvas, its API is programer friendly and its performance is much better than oCanvas.&lt;/p&gt;
+
+&lt;h3 id=&quot;improve-path-finding-using-advance-data-structure&quot;&gt;Improve path finding using advance data structure&lt;/h3&gt;
+
+&lt;p&gt;I can’t find a existing implementation of Binomial Heap in Javascript, so I wrote one.&lt;br /&gt;
+It reduces each path finding time from around 700ms to less than 50ms.&lt;/p&gt;
+
+&lt;h2 id=&quot;why-i-love-coffeescript-more-than-javascript&quot;&gt;Why I love Coffeescript more than Javascript&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;easy and intuitive class inheritance&lt;/li&gt;
+  &lt;li&gt;simpler array/hash iteration&lt;/li&gt;
+  &lt;li&gt;@ instead of this&lt;/li&gt;
+  &lt;li&gt;shorthand for function definition&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;unit-test-and-continuous-integration&quot;&gt;Unit Test and Continuous Integration&lt;/h2&gt;
+
+&lt;p&gt;You really should try the excellent CI tool &lt;a href=&quot;https://travis-ci.org/&quot;&gt;Travis-CI&lt;/a&gt;. It support running unit tests in a variety of environments and is already seamlessly integrated with Github.&lt;/p&gt;
+
+&lt;p&gt;The unit test tool I used is QUnit.&lt;/p&gt;
+
+&lt;h2 id=&quot;possible-improvements&quot;&gt;Possible improvements&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Larger and custom map&lt;/li&gt;
+  &lt;li&gt;Multi-user online game&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Mon, 06 May 2013 18:54:00 +0800</pubDate>
+        <link>http://blog.bencao.it/2013/05/06/game-develop-in-html5-canvas-and-coffeescript/</link>
+        <guid isPermaLink="true">http://blog.bencao.it/2013/05/06/game-develop-in-html5-canvas-and-coffeescript/</guid>
+      </item>
+    
+      <item>
+        <title>How to write a ruby gem</title>
+        <description>&lt;p&gt;Recent days I just wrote an active record extension to make cache optimization easier for company.&lt;br /&gt;
+I realized it’s a useful tool and publish it as a gem might be a good idea.&lt;br /&gt;
+So I start writing the gem ‘acts_as_method_cacheable’ yesterday afternoon, and I found it’s an interesting journey.&lt;br /&gt;
+The home page is &lt;a href=&quot;https://github.com/bencao/acts_as_method_cacheable&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Here are the steps I did it:&lt;/p&gt;
+
+&lt;h2 id=&quot;create-a-gem-with-bundle&quot;&gt;create a Gem with bundle&lt;/h2&gt;
+
+&lt;p&gt;bundle gem xxx will generate a skeleton of a gem, the gem has a hierachy like this&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/posts/gem_hierachy.png&quot; alt=&quot;Gem Hierachy&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;write-info-in-gemspec-file&quot;&gt;write info in gemspec file&lt;/h2&gt;
+
+&lt;p&gt;A typical gemspec file looks like this, which is quite straight forward.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;Gem::Specification.new do |spec|
+  spec.name          = &quot;acts_as_method_cacheable&quot;
+  spec.version       = ActsAsMethodCacheable::VERSION
+  spec.authors       = [&quot;Ben Cao&quot;]
+  spec.email         = [&quot;benb88@gmail.com&quot;]
+  spec.description   = &quot;Make cache methods on ActiveRecord easy!&quot;
+  spec.summary       = &quot;Instead of writing def expensive { @cached_expensive ||= original_expensive }, now you can write instance.cache_method(:expensive) instead. Also support nested &amp;gt;
+  spec.homepage      = &quot;https://github.com/bencao/acts_as_method_cacheable&quot;
+  spec.license       = &quot;MIT&quot;
+
+  spec.files         = `git ls-files`.split($/)
+  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
+  spec.require_paths = [&quot;lib&quot;]
+
+  spec.add_development_dependency &quot;bundler&quot;, &quot;~&amp;gt; 1.3&quot;
+  spec.add_development_dependency &quot;rake&quot;, &quot;~&amp;gt; 10.0.4&quot;
+  spec.add_development_dependency &quot;rspec&quot;, &quot;~&amp;gt; 2.13.0&quot;
+  spec.add_development_dependency &quot;mocha&quot;, &quot;~&amp;gt; 0.13.3&quot;
+  spec.add_development_dependency &quot;sqlite3&quot;, &quot;~&amp;gt; 1.3.7&quot;
+  spec.add_development_dependency &quot;pry&quot;
+  spec.add_development_dependency &quot;pry-theme&quot;
+  spec.add_development_dependency &quot;pry-nav&quot;
+  spec.add_dependency &quot;activesupport&quot;, &quot;~&amp;gt; 3.2.13&quot;
+  spec.add_dependency &quot;activerecord&quot;, &quot;~&amp;gt; 3.2.13&quot;
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Note the dependencies section. development_dependencies will only be installed when you want to develop and runs&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;bundle install
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;in gem source directory.&lt;/p&gt;
+
+&lt;h2 id=&quot;add-test&quot;&gt;add test&lt;/h2&gt;
+
+&lt;p&gt;In order to run spec, I introduced a few development_dependencies, including rspec/sqlite3/pry.&lt;br /&gt;
+Then I created “db” and “spec” folder, where hosts database/spec related files.&lt;/p&gt;
+
+&lt;p&gt;Before that, I need a sqlite db and setting up stand alone active record without rails.&lt;br /&gt;
+After some digest, I wrote this spec_helper, which setup up active record to a empty db.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;require 'active_support'
+require 'active_record'
+require 'sqlite3'
+require 'pry'
+
+db_config = YAML::load(IO.read('db/database.yml'))
+db_file = db_config['development']['database']
+File.delete(db_file) if File.exists?(db_file)
+ActiveRecord::Base.configurations = db_config
+ActiveRecord::Base.establish_connection('development')
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For a simple gem like this, I just defined two active record class “Post” and “Comment” inside my spec file, and use them inside a describe block.&lt;br /&gt;
+To make these model working, we need a ActiveRecord::Migration do create these tables.&lt;br /&gt;
+The spec might be run several times, also migration will be run several times.&lt;br /&gt;
+So you understand why I have to delete the sqlite db file in spec_helper.&lt;/p&gt;
+
+&lt;p&gt;Here is how the spec looks like:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;require 'spec_helper.rb'
+
+class Schema &amp;lt; ActiveRecord::Migration
+  def change
+    create_table :posts do |t|
+      t.string :title
+      t.string :date
+    end
+
+    create_table :comments do |t|
+      t.string :content
+      t.string :author
+      t.string :date
+      t.references :post
+    end
+  end
+
+end
+Schema.new.change
+
+require 'acts_as_method_cacheable'
+
+class Post &amp;lt; ActiveRecord::Base
+  has_many :comments
+
+  def comment_authors
+    comments.map(&amp;amp;:author).join(&quot; &quot;)
+  end
+
+  def comment_contents
+    comments.map(&amp;amp;:content).join(&quot; &quot;)
+  end
+
+  def comment_dates
+    comments.map(&amp;amp;:date).join(&quot; &quot;)
+  end
+
+  def comment_signatures
+    comments.map(&amp;amp;:signature).join(&quot; &quot;)
+  end
+
+  acts_as_method_cacheable :methods =&amp;gt; [:comment_authors, :comment_contents]
+end
+
+class Comment &amp;lt; ActiveRecord::Base
+  belongs_to :post
+
+  def signature
+    sub_signature
+  end
+
+  def sub_signature
+    &quot;cool!&quot;
+  end
+
+  acts_as_method_cacheable
+end
+
+describe ActsAsMethodCacheable do
+
+  before(:each) do
+    @post = Post.create!(:title =&amp;gt; 'test', :date =&amp;gt; '2013-04-04')
+    @post.comments.create!(:content =&amp;gt; 'ct1', :author =&amp;gt; 'ben', :date =&amp;gt; '2013-04-05')
+    @post.comments.create!(:content =&amp;gt; 'ct2', :author =&amp;gt; 'feng', :date =&amp;gt; '2013-04-06')
+    @comment1, @comment2 = @post.comments.to_a
+  end
+
+  context &quot;class&quot; do
+    it &quot;should return the same result as without cache&quot; do
+      @post.comment_authors.should == @comment1.author + &quot; &quot; + @comment2.author
+      @post.comment_authors.should == @comment1.author + &quot; &quot; + @comment2.author
+    end
+
+    # ...
+  end
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;build-and-publish&quot;&gt;build and publish&lt;/h2&gt;
+
+&lt;p&gt;build gem is easy.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;gem build acts_as_method_cacheable.gemspec
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;publish gem is easy once you’ve registered a rubygem.org account and downloaded credentials to localhost.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;curl -u USERNAME https://rubygems.org/api/v1/api_key.yaml &amp;gt; ~/.gem/credentials
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-bash&quot;&gt;gem push acts_as_method_cacheable-0.1.0.gem
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And it’s all done.&lt;/p&gt;
+</description>
+        <pubDate>Wed, 10 Apr 2013 11:49:00 +0800</pubDate>
+        <link>http://blog.bencao.it/2013/04/10/how-to-write-a-ruby-gem/</link>
+        <guid isPermaLink="true">http://blog.bencao.it/2013/04/10/how-to-write-a-ruby-gem/</guid>
+      </item>
+    
+  </channel>
+</rss>

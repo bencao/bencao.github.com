@@ -1,4 +1,4 @@
-# Personal blog base on octopress and hosted on Github pages
+bencao.github.com
+=================
 
-[octopress](http://octopress.org/)
-[github pages](http://pages.github.com/)
+personal blog
