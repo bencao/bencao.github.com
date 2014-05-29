@@ -2,6 +2,7 @@
 layout: page
 title: About
 permalink: /about/
+show_link_on_head: true
 ---
 
 My name is Ben Cao, this is the blog about my understanding and experience about programming, coding, etc.

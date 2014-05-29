@@ -1,10 +1,11 @@
 # Site settings
-title: Ben Cao's Blog
+title: Ben's Blog
 email: benb88@gmail.com
-description: "tech life"
+description: "tech life with passion"
 baseurl: ""
 url: "http://blog.bencao.it"
 username: bencao
+fullname: Ben Cao
 
 # Build settings
 markdown: kramdown
@@ -12,5 +13,3 @@ permalink: pretty
 
 kramdown:
   input: GFM
-
-
