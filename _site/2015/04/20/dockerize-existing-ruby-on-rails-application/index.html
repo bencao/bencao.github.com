@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Dockerize existing ruby on rails application</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="tech life with passion">
+    <link rel="canonical" href="http://blog.bencao.it/2015/04/20/dockerize-existing-ruby-on-rails-application/">
+    <link href='http://fonts.googleapis.com/css?family=Inconsolata' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Molle:400italic' rel='stylesheet' type='text/css'>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">Ben's Blog</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          
+            <a class="page-link" href="/about/">About</a>
+          
+        
+          
+            <a class="page-link" href="/">Posts</a>
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <header class="post-header">
+    <h1>Dockerize existing ruby on rails application</h1>
+    <p class="meta">Apr 20, 2015</p>
+  </header>
+
+  <article class="post-content">
+  <blockquote>
+  <p>This article will focus on dockerizing existing rails app because it’s common and challenging.<br />
+But as long as a new app will finally become old, you may find some tips here still be helpful.</p>
+</blockquote>
+
+<p>Say we have an existing ruby on rails project and we decide to somehow run it inside a docker container so we can get those great benefits of Docker ecosystem.</p>
+
+<p>Ready? Let’s start.</p>
+
+<p>First we can divide the task into several phases:</p>
+
+<ul>
+  <li>Setup a base image with ruby environment</li>
+  <li>Install gems with bundler</li>
+  <li>Compile static assets</li>
+  <li>Provision app before start</li>
+  <li>Start web server</li>
+</ul>
+
+<h2 id="setup-a-base-image-with-ruby-environment">Setup a base image with ruby environment</h2>
+
+<p>Both <a href="https://registry.hub.docker.com/_/ruby/">Ruby</a> and <a href="https://registry.hub.docker.com/_/rails/">Rails</a> have offical images available.<br />
+But it’s also not too hard to build it from scratch.</p>
+
+<h3 id="using-rails-official-images">Using Rails official images</h3>
+
+<p>We don’t recommend Rails official images for production use because</p>
+
+<ul>
+  <li>only rails 4+ has offical images</li>
+  <li>we can’t control ruby version, which brings trouble in case we want to upgrade ruby for vulnerability issues</li>
+  <li>rails could simply be installed by <code>bundle install</code></li>
+</ul>
+
+<h3 id="using-ruby-offcial-images">Using Ruby offcial images</h3>
+
+<p>Ruby official images are turned to be helpful, they offer options from down to ruby 1.9.3 and up to latest stable version.<br />
+If you’re lucky, your target ruby is one of the official versions, it could be the best choice to start from a official ruby image.</p>
+
+<h3 id="build-base-ruby-image-from-scratch">Build base Ruby image from scratch</h3>
+
+<p>But if you’re not so lucky, like our case, we have legacy rails apps running on ree-1.8.7, so there’s no way except building a base ruby image by ourselves.</p>
+
+<p>We’ve tried both <a href="http://rvm.io/">RVM</a> and <a href="https://github.com/sstephenson/ruby-build">ruby-build</a>, and we finally chose ruby-build for its simplicity.</p>
+
+<blockquote>
+  <p>Note ree-1.8.7 need some patches to make it work correctly, create a directory called patch, and put <a href="https://gist.githubusercontent.com/bencao/32bf9c69c606e2b58666/raw/ab232ae9992cc026e393b9c8825c6c390dc29e92/ree-1.8.7-2011.12">ree-1.8.7-2011.12</a> inside of it.</p>
+</blockquote>
+
+<p>Here’s the Dockerfile demonstrating how we build it:</p>
+
+<pre><code class="language-shell">FROM centos:7
+
+# install those basic tools we will use in debugging
+RUN yum install -y \
+  git \
+  tar vim \
+  gcc gcc-c++ make patch \
+  hostname nmap-ncat readline-devel; \
+  yum -y clean all
+
+# install ruby build
+RUN git clone https://github.com/sstephenson/ruby-build.git /root/ruby-build &amp;&amp; /root/ruby-build/install.sh
+
+# install ree, gcc44 is a must-have
+RUN yum install -y compat-gcc-44; yum -y clean all
+ADD ./patch/* /usr/local/share/ruby-build/
+RUN CC=gcc44 ruby-build ree-1.8.7-2011.12 /ruby
+RUN echo "export PATH=$PATH:/ruby/bin" &gt; /etc/profile.d/ruby.sh
+ENV PATH $PATH:/ruby/bin
+
+# use taobao gem source, as in China rubygems.org has been blocked
+RUN gem sources --remove https://rubygems.org/ &amp;&amp; gem sources --add https://ruby.taobao.org/
+
+# install bundler
+RUN gem install -N bundler
+</code></pre>
+
+<p>Then build image with</p>
+
+<pre><code class="language-shell">docker build -t my-company/ruby-base .
+</code></pre>
+
+<h2 id="install-gems-with-bundler">Install gems with bundler</h2>
+
+<h3 id="install-system-libraries">Install System Libraries</h3>
+
+<p>Before installing gems, we should first install those system libraries that we need for some gems to compile to native extensions.<br />
+For example, we need to install <code>mysql-devel</code> package manually in Centos before we install <code>mysql2</code> gem.</p>
+
+<h3 id="bundle-install">Bundle Install</h3>
+
+<p>Simply run a bundle install in Dockerfile is a solution. But it has a drawback. See this typical example:</p>
+
+<pre><code class="language-shell">FROM my-company/ruby-base:latest
+
+ADD . /my-app
+WORKDIR /my-app
+
+RUN bundle install --jobs 3 --retry 3
+RUN bundle clean --force
+</code></pre>
+
+<p>Because we add project files first, the ADD command invalidate the Docker cache, then bundle install can be a expensive command, in our case without any optimization this take more than 10 minutes.</p>
+
+<p>How could we make it faster?</p>
+
+<p>We could also separate the cost into 2 parts:</p>
+
+<ul>
+  <li>Time takes for downloading Gems from remote gem servers</li>
+  <li>Time takes for compiling gems with native extensions</li>
+</ul>
+
+<p>Let’s deal with them one by one.</p>
+
+<h4 id="reduce-downloading-time">Reduce downloading time</h4>
+
+<p>We’ve tried many means and finally we find this solution being helpful and more importantly being elegant.</p>
+
+<pre><code class="language-shell"># this is a command line context, it could be a Jenkins Job or our local terminal
+# in the same directory we placed the Dockerfile above
+bundle package --all
+docker build -t my-company/incredible-app
+</code></pre>
+
+<p>After <code>bundle package --all</code>, gem sources will be cached in <code>vendor/cache</code> directory, and during docker build we will spend no time downloading it from remote server.<br />
+For the first time, <code>bundle package --all</code> could be slow, but from second time it will be very fast.<br />
+Which means we have the same solution in local and in CI environment, and there’s no any invasion into Dockerfile.<br />
+Beatuiful, just like the progressive enhancement idea that was once famous in frontend world.</p>
+
+<h4 id="reduce-compiling-time">Reduce compiling time</h4>
+
+<p>It’s easy to see which extension takes the most time. Considering Gems should be quite stable, we could introduce a new image layer which install some gems in advance. Here’s our example:</p>
+
+<pre><code class="language-shell">FROM my-company/ruby-base:latest
+
+# only purpose for this image is to speed up normal build
+
+# save 3 min
+RUN gem install -N nokogiri -v 1.6.2.1
+
+# save 1min10s
+RUN gem install -N curb -v 0.8.5
+
+# save around 30s
+RUN gem install -N poltergeist -v 1.5.1
+
+# save more than 30s
+RUN gem install -N unicorn -v 4.8.3
+
+# save 16s
+RUN gem install -N therubyracer -v 0.12.1
+
+# save 10s
+RUN gem install -N oj -v 2.12.0
+
+# save 10s
+RUN gem install -N mysql2 -v 0.3.18
+
+# save 10s
+RUN gem install -N ruby-prof -v 0.15.2
+</code></pre>
+
+<p>And some slightly modification is needed for app’s Dockerfile</p>
+
+<pre><code class="language-shell"># update FROM section to point to the image created above
+FROM my-company/ruby-incredible-app-base:latest
+</code></pre>
+
+<h2 id="compile-static-assets">Compile static assets</h2>
+
+<p>This step is quite simple, just add a <code>RUN rake assets:precompile</code> and it will work.</p>
+
+<h2 id="provision-the-app-before-start">Provision the app before start</h2>
+
+<h3 id="generate-config-files">Generate Config Files</h3>
+
+<p>Config files are prerequisite for rails application.<br />
+Pass them in via volume is an option, but if you have ever agreed <a href="http://12factor.net/">Twelve Factor</a> you may prefer the environment variables option.<br />
+We want to discuss how to generate config files given injected ENV variables.</p>
+
+<p>Let’s think about it deeper.</p>
+
+<ol>
+  <li>The generation will happen in container runtime, which limit the possible dealing points in <code>CMD</code> and <code>ENTRYPOINT</code> instruction.</li>
+  <li>The main difference between <code>CMD</code> and <code>ENTRYPOINT</code> is <code>CMD</code> is very likely to be overriden in <code>docker run</code> command.</li>
+  <li>So it depends on whether we want the config files to be generated if command is overridden?</li>
+</ol>
+
+<p>For our case, we want to generate config files even if other commands, such as <code>rspec spec</code> is given.<br />
+So we chose <code>ENTRYPOINT</code> as a point to generate config files.</p>
+
+<p>Here’s our sample docker-entrypoint.sh</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+exec "$@"
+
+</code></pre>
+
+<p>docker-initializers/generate_database_yml.sh</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+cat &lt;&lt; EOF &gt; $1
+defaults: &amp;defaults
+  adapter: mysql2
+  reconnect: true
+  encoding: utf8
+  host: $MYSQL_MY_APP_HOST
+  port: $MYSQL_MY_APP_PORT
+  username: $MYSQL_MY_APP_USERNAME
+  password: $MYSQL_MY_APP_PASSWORD
+
+test:
+  &lt;&lt;: *defaults
+
+development:
+  &lt;&lt;: *defaults
+
+production:
+  &lt;&lt;: *defaults
+
+EOF
+
+</code></pre>
+
+<p>So from the above samples you could find that we will be dependent on these MYSQL_* parameters.</p>
+
+<h3 id="link-support">Link Support</h3>
+
+<p>It’s possible users will link the app container with mysql or some other service containers.<br />
+In order to support them, we could adapt link ENV variables to previous MYSQL_* parameters.</p>
+
+<p>docker-initializers/link_support.sh</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+# --link mysql support
+if [ -n "$MYSQL_PORT_3306_TCP_ADDR" ]; then
+  export MYSQL_MY_APP_HOST=$MYSQL_PORT_3306_TCP_ADDR
+  export MYSQL_MY_APP_PORT=$MYSQL_PORT_3306_TCP_PORT
+  export MYSQL_MY_APP_USERNAME=default_user
+  export MYSQL_MY_APP_PASSWORD=default_password
+fi
+
+</code></pre>
+
+<p>Adding link support to docker-entrypoint.sh, it now becames:</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# handling case such as docker run --link mysql-1:mysql
+source /my-app/docker-initializers/link_support.sh
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+exec "$@"
+</code></pre>
+
+<h3 id="wait-support">Wait Support</h3>
+
+<p>Now our database.yml will be automatically generated upon start. But there’s another problem, if mysql is still initializing while rails tries to connect to it, rails will throw an error about database connection.<br />
+The reason is rails need to get the metadata of DB tables to allow ActiveRecord work correctly.<br />
+How to deal with this problem?<br />
+We could ensure this from outside, but add some protection inside is still harmless. Here’s how we do it:</p>
+
+<blockquote>
+  <p>We’ve employed <code>nmap-ncat</code> package in ruby-base image, now it’s time for it to shine.</p>
+</blockquote>
+
+<p>docker-initializers/wait_support.sh</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+function wait_for() {
+  service=$1
+  host=$2
+  port=$3
+
+  echo "waiting for $service to be up on $host:$port..."
+
+  if [ -n "$host" -a -n "$port" ]; then
+    while ! nc -w 1 -c echo $host $port
+    do
+      echo -n .
+      sleep 1
+    done
+
+    echo 'ok'
+  else
+    echo "[ERROR] invalid host=$host or port=$port for $service"
+    exit 1
+  fi
+}
+
+wait_for "database connection - $MYSQL_MY_APP_DBNAME" $MYSQL_MY_APP_HOST $MYSQL_MY_APP_PORT
+
+</code></pre>
+
+<p>Adding wait support, docker-entrypoint.sh now becomes:</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# handling case such as docker run --link mysql-1:mysql
+source /my-app/docker-initializers/link_support.sh
+
+# wait for other service ports to be ready, this can be enabled by a environment variable
+if [ "$WAIT_FOR_DEPENDED_SERVICES" = "true" ]; then
+  source /my-app/docker-initializers/wait_support.sh
+fi
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+exec "$@"
+
+</code></pre>
+
+<h3 id="default-params-support">Default Params Support</h3>
+
+<p>In the above section we add a switch for wait support. Only if user set WAIT_FOR_DEPENDED_SERVICES to be true we will enjoy the benefit of wait support.<br />
+It’s natural to consider adding a default value for this variable. Also for mysql db name we can utilize this design, as following:</p>
+
+<p>docker-initializers/default_env_params.sh</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+if [ -z "$MYSQL_MY_APP_DBNAME" ]; then
+  export MYSQL_MY_APP_DBNAME=my_app_database
+fi
+
+if [ -z "$WAIT_FOR_DEPENDED_SERVICES" ]; then
+  export WAIT_FOR_DEPENDED_SERVICES=true
+fi
+
+</code></pre>
+
+<p>Including some simple cleanups, now docker-entrypoint.sh reach its final state:</p>
+
+<pre><code class="language-shell">#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# handling case such as docker run --link mysql-1:mysql
+source /my-app/docker-initializers/link_support.sh
+
+# set ENV params if they're not set by users
+source /my-app/docker-initializers/default_env_params.sh
+
+# wait for other service ports to be ready
+if [ "$WAIT_FOR_DEPENDED_SERVICES" = "true" ]; then
+  source /my-app/docker-initializers/wait_support.sh
+fi
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+# prepare log and tmp directories
+mkdir -p /my-app/log
+mkdir -p /my-app/tmp
+rm -rf /my-app/tmp/*
+
+exec "$@"
+
+</code></pre>
+
+<h2 id="start-web-server">Start web server</h2>
+
+<h3 id="choose-a-proper-web-server">Choose a proper web server</h3>
+
+<p>Depends on each team’s situation, maybe you have some experts about puma, maybe you prefer event machine based implementations like thin.<br />
+It’s a total freedom to choose whatever we’re comfortable to power your rails app.</p>
+
+<p>From our case, we were using unicorn as our web server so we kept using it in dockerized app.<br />
+It worth mentioning that unicorn has a fantastic feature that is it can dynamically adjust its worker count in runtime, using process signal like TTIN and TTOU.</p>
+
+<p>Say we have unicorn.conf.rb in our project root, then we can start server in default ```CMD`` command:</p>
+
+<pre><code class="language-shell">FROM my-company/ruby-incredible-app-base:latest
+
+ADD . /my-app
+WORKDIR /my-app
+
+RUN bundle install --jobs 3 --retry 3
+RUN bundle clean --force
+
+EXPOSE 3000
+
+ENTRYPOINT ["/my-app/docker_entrypoint.sh"]
+CMD ["unicorn_rails", "-l", "3000", "-c", "/my-app/unicorn.conf.rb"]
+
+</code></pre>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Some of you may figure out there’s still a problem, now it’s quite complex for us to start the application.<br />
+We need to either offering some MYSQL_* ENV variables or linking our app container to a mysql container.<br />
+This is a great question, and it opens the door for container orchestration, which is another fascinating area.</p>
+
+<p>Maybe in the future I will post a blog post about it.<br />
+For now, just some quick advices. If you want to simplify local development or small amount deployment, you may be interested in <a href="https://docs.docker.com/compose/">docker-compose</a>.</p>
+
+<p>It’s a long run, sincerely thank you for reading till here!</p>
+
+  </article>
+
+</div>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'blogbencaoit'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <div class="footer-col-1 column">
+      <p class="text">Ben Cao</p>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/bencao">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">tech life with passion</p>
+    </div>
+  </div>
+
+</footer>
+
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51497218-1', 'bencao.it');
+  ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

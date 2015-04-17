@@ -40,13 +40,13 @@
       <div class="trigger">
         
           
-        
-          
             <a class="page-link" href="/about/">About</a>
           
         
           
             <a class="page-link" href="/">Posts</a>
+          
+        
           
         
       </div>
@@ -208,7 +208,7 @@ So we can always try to find rooms for cutting unnecessary object constructions.
 <h3 id="adjust-gc-make-it-run-faster">adjust GC make it run faster</h3>
 
 <p>Digging into <a href="https://github.com/ruby/ruby/blob/trunk/gc.c">ruby GC implementation</a> you will find that there’re several tunable params to control its behaviours.<br />
-For example, I used these settings in my local machine which accelerates visiting speed about 50%
+For example, I used these settings in my local machine which accelerates visiting speed about 50%<br />
 <code>bash
 export RUBY_HEAP_MIN_SLOTS=300000
 export RUBY_HEAP_SLOTS_INCREMENT=100000

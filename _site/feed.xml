@@ -1,10 +1,437 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Ben's Blog</title>
+    <title>Ben&#39;s Blog</title>
     <description>tech life with passion</description>
     <link>http://blog.bencao.it/</link>
     <atom:link href="http://blog.bencao.it/feed.xml" rel="self" type="application/rss+xml" />
+    
+      <item>
+        <title>Dockerize existing ruby on rails application</title>
+        <description>&lt;blockquote&gt;
+  &lt;p&gt;This article will focus on dockerizing existing rails app because it’s common and challenging.&lt;br /&gt;
+But as long as a new app will finally become old, you may find some tips here still be helpful.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Say we have an existing ruby on rails project and we decide to somehow run it inside a docker container so we can get those great benefits of Docker ecosystem.&lt;/p&gt;
+
+&lt;p&gt;Ready? Let’s start.&lt;/p&gt;
+
+&lt;p&gt;First we can divide the task into several phases:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Setup a base image with ruby environment&lt;/li&gt;
+  &lt;li&gt;Install gems with bundler&lt;/li&gt;
+  &lt;li&gt;Compile static assets&lt;/li&gt;
+  &lt;li&gt;Provision app before start&lt;/li&gt;
+  &lt;li&gt;Start web server&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;setup-a-base-image-with-ruby-environment&quot;&gt;Setup a base image with ruby environment&lt;/h2&gt;
+
+&lt;p&gt;Both &lt;a href=&quot;https://registry.hub.docker.com/_/ruby/&quot;&gt;Ruby&lt;/a&gt; and &lt;a href=&quot;https://registry.hub.docker.com/_/rails/&quot;&gt;Rails&lt;/a&gt; have offical images available.&lt;br /&gt;
+But it’s also not too hard to build it from scratch.&lt;/p&gt;
+
+&lt;h3 id=&quot;using-rails-official-images&quot;&gt;Using Rails official images&lt;/h3&gt;
+
+&lt;p&gt;We don’t recommend Rails official images for production use because&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;only rails 4+ has offical images&lt;/li&gt;
+  &lt;li&gt;we can’t control ruby version, which brings trouble in case we want to upgrade ruby for vulnerability issues&lt;/li&gt;
+  &lt;li&gt;rails could simply be installed by &lt;code&gt;bundle install&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;using-ruby-offcial-images&quot;&gt;Using Ruby offcial images&lt;/h3&gt;
+
+&lt;p&gt;Ruby official images are turned to be helpful, they offer options from down to ruby 1.9.3 and up to latest stable version.&lt;br /&gt;
+If you’re lucky, your target ruby is one of the official versions, it could be the best choice to start from a official ruby image.&lt;/p&gt;
+
+&lt;h3 id=&quot;build-base-ruby-image-from-scratch&quot;&gt;Build base Ruby image from scratch&lt;/h3&gt;
+
+&lt;p&gt;But if you’re not so lucky, like our case, we have legacy rails apps running on ree-1.8.7, so there’s no way except building a base ruby image by ourselves.&lt;/p&gt;
+
+&lt;p&gt;We’ve tried both &lt;a href=&quot;http://rvm.io/&quot;&gt;RVM&lt;/a&gt; and &lt;a href=&quot;https://github.com/sstephenson/ruby-build&quot;&gt;ruby-build&lt;/a&gt;, and we finally chose ruby-build for its simplicity.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Note ree-1.8.7 need some patches to make it work correctly, create a directory called patch, and put &lt;a href=&quot;https://gist.githubusercontent.com/bencao/32bf9c69c606e2b58666/raw/ab232ae9992cc026e393b9c8825c6c390dc29e92/ree-1.8.7-2011.12&quot;&gt;ree-1.8.7-2011.12&lt;/a&gt; inside of it.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Here’s the Dockerfile demonstrating how we build it:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;FROM centos:7
+
+# install those basic tools we will use in debugging
+RUN yum install -y \
+  git \
+  tar vim \
+  gcc gcc-c++ make patch \
+  hostname nmap-ncat readline-devel; \
+  yum -y clean all
+
+# install ruby build
+RUN git clone https://github.com/sstephenson/ruby-build.git /root/ruby-build &amp;amp;&amp;amp; /root/ruby-build/install.sh
+
+# install ree, gcc44 is a must-have
+RUN yum install -y compat-gcc-44; yum -y clean all
+ADD ./patch/* /usr/local/share/ruby-build/
+RUN CC=gcc44 ruby-build ree-1.8.7-2011.12 /ruby
+RUN echo &quot;export PATH=$PATH:/ruby/bin&quot; &amp;gt; /etc/profile.d/ruby.sh
+ENV PATH $PATH:/ruby/bin
+
+# use taobao gem source, as in China rubygems.org has been blocked
+RUN gem sources --remove https://rubygems.org/ &amp;amp;&amp;amp; gem sources --add https://ruby.taobao.org/
+
+# install bundler
+RUN gem install -N bundler
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Then build image with&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;docker build -t my-company/ruby-base .
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;install-gems-with-bundler&quot;&gt;Install gems with bundler&lt;/h2&gt;
+
+&lt;h3 id=&quot;install-system-libraries&quot;&gt;Install System Libraries&lt;/h3&gt;
+
+&lt;p&gt;Before installing gems, we should first install those system libraries that we need for some gems to compile to native extensions.&lt;br /&gt;
+For example, we need to install &lt;code&gt;mysql-devel&lt;/code&gt; package manually in Centos before we install &lt;code&gt;mysql2&lt;/code&gt; gem.&lt;/p&gt;
+
+&lt;h3 id=&quot;bundle-install&quot;&gt;Bundle Install&lt;/h3&gt;
+
+&lt;p&gt;Simply run a bundle install in Dockerfile is a solution. But it has a drawback. See this typical example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;FROM my-company/ruby-base:latest
+
+ADD . /my-app
+WORKDIR /my-app
+
+RUN bundle install --jobs 3 --retry 3
+RUN bundle clean --force
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Because we add project files first, the ADD command invalidate the Docker cache, then bundle install can be a expensive command, in our case without any optimization this take more than 10 minutes.&lt;/p&gt;
+
+&lt;p&gt;How could we make it faster?&lt;/p&gt;
+
+&lt;p&gt;We could also separate the cost into 2 parts:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Time takes for downloading Gems from remote gem servers&lt;/li&gt;
+  &lt;li&gt;Time takes for compiling gems with native extensions&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Let’s deal with them one by one.&lt;/p&gt;
+
+&lt;h4 id=&quot;reduce-downloading-time&quot;&gt;Reduce downloading time&lt;/h4&gt;
+
+&lt;p&gt;We’ve tried many means and finally we find this solution being helpful and more importantly being elegant.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;# this is a command line context, it could be a Jenkins Job or our local terminal
+# in the same directory we placed the Dockerfile above
+bundle package --all
+docker build -t my-company/incredible-app
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After &lt;code&gt;bundle package --all&lt;/code&gt;, gem sources will be cached in &lt;code&gt;vendor/cache&lt;/code&gt; directory, and during docker build we will spend no time downloading it from remote server.&lt;br /&gt;
+For the first time, &lt;code&gt;bundle package --all&lt;/code&gt; could be slow, but from second time it will be very fast.&lt;br /&gt;
+Which means we have the same solution in local and in CI environment, and there’s no any invasion into Dockerfile.&lt;br /&gt;
+Beatuiful, just like the progressive enhancement idea that was once famous in frontend world.&lt;/p&gt;
+
+&lt;h4 id=&quot;reduce-compiling-time&quot;&gt;Reduce compiling time&lt;/h4&gt;
+
+&lt;p&gt;It’s easy to see which extension takes the most time. Considering Gems should be quite stable, we could introduce a new image layer which install some gems in advance. Here’s our example:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;FROM my-company/ruby-base:latest
+
+# only purpose for this image is to speed up normal build
+
+# save 3 min
+RUN gem install -N nokogiri -v 1.6.2.1
+
+# save 1min10s
+RUN gem install -N curb -v 0.8.5
+
+# save around 30s
+RUN gem install -N poltergeist -v 1.5.1
+
+# save more than 30s
+RUN gem install -N unicorn -v 4.8.3
+
+# save 16s
+RUN gem install -N therubyracer -v 0.12.1
+
+# save 10s
+RUN gem install -N oj -v 2.12.0
+
+# save 10s
+RUN gem install -N mysql2 -v 0.3.18
+
+# save 10s
+RUN gem install -N ruby-prof -v 0.15.2
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And some slightly modification is needed for app’s Dockerfile&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;# update FROM section to point to the image created above
+FROM my-company/ruby-incredible-app-base:latest
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;compile-static-assets&quot;&gt;Compile static assets&lt;/h2&gt;
+
+&lt;p&gt;This step is quite simple, just add a &lt;code&gt;RUN rake assets:precompile&lt;/code&gt; and it will work.&lt;/p&gt;
+
+&lt;h2 id=&quot;provision-the-app-before-start&quot;&gt;Provision the app before start&lt;/h2&gt;
+
+&lt;h3 id=&quot;generate-config-files&quot;&gt;Generate Config Files&lt;/h3&gt;
+
+&lt;p&gt;Config files are prerequisite for rails application.&lt;br /&gt;
+Pass them in via volume is an option, but if you have ever agreed &lt;a href=&quot;http://12factor.net/&quot;&gt;Twelve Factor&lt;/a&gt; you may prefer the environment variables option.&lt;br /&gt;
+We want to discuss how to generate config files given injected ENV variables.&lt;/p&gt;
+
+&lt;p&gt;Let’s think about it deeper.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The generation will happen in container runtime, which limit the possible dealing points in &lt;code&gt;CMD&lt;/code&gt; and &lt;code&gt;ENTRYPOINT&lt;/code&gt; instruction.&lt;/li&gt;
+  &lt;li&gt;The main difference between &lt;code&gt;CMD&lt;/code&gt; and &lt;code&gt;ENTRYPOINT&lt;/code&gt; is &lt;code&gt;CMD&lt;/code&gt; is very likely to be overriden in &lt;code&gt;docker run&lt;/code&gt; command.&lt;/li&gt;
+  &lt;li&gt;So it depends on whether we want the config files to be generated if command is overridden?&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;For our case, we want to generate config files even if other commands, such as &lt;code&gt;rspec spec&lt;/code&gt; is given.&lt;br /&gt;
+So we chose &lt;code&gt;ENTRYPOINT&lt;/code&gt; as a point to generate config files.&lt;/p&gt;
+
+&lt;p&gt;Here’s our sample docker-entrypoint.sh&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+exec &quot;$@&quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;docker-initializers/generate_database_yml.sh&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+cat &amp;lt;&amp;lt; EOF &amp;gt; $1
+defaults: &amp;amp;defaults
+  adapter: mysql2
+  reconnect: true
+  encoding: utf8
+  host: $MYSQL_MY_APP_HOST
+  port: $MYSQL_MY_APP_PORT
+  username: $MYSQL_MY_APP_USERNAME
+  password: $MYSQL_MY_APP_PASSWORD
+
+test:
+  &amp;lt;&amp;lt;: *defaults
+
+development:
+  &amp;lt;&amp;lt;: *defaults
+
+production:
+  &amp;lt;&amp;lt;: *defaults
+
+EOF
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So from the above samples you could find that we will be dependent on these MYSQL_* parameters.&lt;/p&gt;
+
+&lt;h3 id=&quot;link-support&quot;&gt;Link Support&lt;/h3&gt;
+
+&lt;p&gt;It’s possible users will link the app container with mysql or some other service containers.&lt;br /&gt;
+In order to support them, we could adapt link ENV variables to previous MYSQL_* parameters.&lt;/p&gt;
+
+&lt;p&gt;docker-initializers/link_support.sh&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+# --link mysql support
+if [ -n &quot;$MYSQL_PORT_3306_TCP_ADDR&quot; ]; then
+  export MYSQL_MY_APP_HOST=$MYSQL_PORT_3306_TCP_ADDR
+  export MYSQL_MY_APP_PORT=$MYSQL_PORT_3306_TCP_PORT
+  export MYSQL_MY_APP_USERNAME=default_user
+  export MYSQL_MY_APP_PASSWORD=default_password
+fi
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Adding link support to docker-entrypoint.sh, it now becames:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# handling case such as docker run --link mysql-1:mysql
+source /my-app/docker-initializers/link_support.sh
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+exec &quot;$@&quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;wait-support&quot;&gt;Wait Support&lt;/h3&gt;
+
+&lt;p&gt;Now our database.yml will be automatically generated upon start. But there’s another problem, if mysql is still initializing while rails tries to connect to it, rails will throw an error about database connection.&lt;br /&gt;
+The reason is rails need to get the metadata of DB tables to allow ActiveRecord work correctly.&lt;br /&gt;
+How to deal with this problem?&lt;br /&gt;
+We could ensure this from outside, but add some protection inside is still harmless. Here’s how we do it:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;We’ve employed &lt;code&gt;nmap-ncat&lt;/code&gt; package in ruby-base image, now it’s time for it to shine.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;docker-initializers/wait_support.sh&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+function wait_for() {
+  service=$1
+  host=$2
+  port=$3
+
+  echo &quot;waiting for $service to be up on $host:$port...&quot;
+
+  if [ -n &quot;$host&quot; -a -n &quot;$port&quot; ]; then
+    while ! nc -w 1 -c echo $host $port
+    do
+      echo -n .
+      sleep 1
+    done
+
+    echo &#39;ok&#39;
+  else
+    echo &quot;[ERROR] invalid host=$host or port=$port for $service&quot;
+    exit 1
+  fi
+}
+
+wait_for &quot;database connection - $MYSQL_MY_APP_DBNAME&quot; $MYSQL_MY_APP_HOST $MYSQL_MY_APP_PORT
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Adding wait support, docker-entrypoint.sh now becomes:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# handling case such as docker run --link mysql-1:mysql
+source /my-app/docker-initializers/link_support.sh
+
+# wait for other service ports to be ready, this can be enabled by a environment variable
+if [ &quot;$WAIT_FOR_DEPENDED_SERVICES&quot; = &quot;true&quot; ]; then
+  source /my-app/docker-initializers/wait_support.sh
+fi
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+exec &quot;$@&quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;default-params-support&quot;&gt;Default Params Support&lt;/h3&gt;
+
+&lt;p&gt;In the above section we add a switch for wait support. Only if user set WAIT_FOR_DEPENDED_SERVICES to be true we will enjoy the benefit of wait support.&lt;br /&gt;
+It’s natural to consider adding a default value for this variable. Also for mysql db name we can utilize this design, as following:&lt;/p&gt;
+
+&lt;p&gt;docker-initializers/default_env_params.sh&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+if [ -z &quot;$MYSQL_MY_APP_DBNAME&quot; ]; then
+  export MYSQL_MY_APP_DBNAME=my_app_database
+fi
+
+if [ -z &quot;$WAIT_FOR_DEPENDED_SERVICES&quot; ]; then
+  export WAIT_FOR_DEPENDED_SERVICES=true
+fi
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Including some simple cleanups, now docker-entrypoint.sh reach its final state:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;#!/bin/bash
+
+# stop execution if any commands fail
+set -e
+
+# handling case such as docker run --link mysql-1:mysql
+source /my-app/docker-initializers/link_support.sh
+
+# set ENV params if they&#39;re not set by users
+source /my-app/docker-initializers/default_env_params.sh
+
+# wait for other service ports to be ready
+if [ &quot;$WAIT_FOR_DEPENDED_SERVICES&quot; = &quot;true&quot; ]; then
+  source /my-app/docker-initializers/wait_support.sh
+fi
+
+# generate database.yml
+source /my-app/docker-initializers/generate_database_yml.sh /my-app/config/database.yml
+
+# prepare log and tmp directories
+mkdir -p /my-app/log
+mkdir -p /my-app/tmp
+rm -rf /my-app/tmp/*
+
+exec &quot;$@&quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;start-web-server&quot;&gt;Start web server&lt;/h2&gt;
+
+&lt;h3 id=&quot;choose-a-proper-web-server&quot;&gt;Choose a proper web server&lt;/h3&gt;
+
+&lt;p&gt;Depends on each team’s situation, maybe you have some experts about puma, maybe you prefer event machine based implementations like thin.&lt;br /&gt;
+It’s a total freedom to choose whatever we’re comfortable to power your rails app.&lt;/p&gt;
+
+&lt;p&gt;From our case, we were using unicorn as our web server so we kept using it in dockerized app.&lt;br /&gt;
+It worth mentioning that unicorn has a fantastic feature that is it can dynamically adjust its worker count in runtime, using process signal like TTIN and TTOU.&lt;/p&gt;
+
+&lt;p&gt;Say we have unicorn.conf.rb in our project root, then we can start server in default ```CMD`` command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-shell&quot;&gt;FROM my-company/ruby-incredible-app-base:latest
+
+ADD . /my-app
+WORKDIR /my-app
+
+RUN bundle install --jobs 3 --retry 3
+RUN bundle clean --force
+
+EXPOSE 3000
+
+ENTRYPOINT [&quot;/my-app/docker_entrypoint.sh&quot;]
+CMD [&quot;unicorn_rails&quot;, &quot;-l&quot;, &quot;3000&quot;, &quot;-c&quot;, &quot;/my-app/unicorn.conf.rb&quot;]
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Some of you may figure out there’s still a problem, now it’s quite complex for us to start the application.&lt;br /&gt;
+We need to either offering some MYSQL_* ENV variables or linking our app container to a mysql container.&lt;br /&gt;
+This is a great question, and it opens the door for container orchestration, which is another fascinating area.&lt;/p&gt;
+
+&lt;p&gt;Maybe in the future I will post a blog post about it.&lt;br /&gt;
+For now, just some quick advices. If you want to simplify local development or small amount deployment, you may be interested in &lt;a href=&quot;https://docs.docker.com/compose/&quot;&gt;docker-compose&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;It’s a long run, sincerely thank you for reading till here!&lt;/p&gt;
+</description>
+        <pubDate>Mon, 20 Apr 2015 11:33:00 +0000</pubDate>
+        <link>http://blog.bencao.it/2015/04/20/dockerize-existing-ruby-on-rails-application/</link>
+        <guid isPermaLink="true">http://blog.bencao.it/2015/04/20/dockerize-existing-ruby-on-rails-application/</guid>
+      </item>
     
       <item>
         <title>Some thoughts about coding</title>
@@ -102,7 +529,7 @@ end
 
 &lt;p&gt;So finally coding is becoming an art. Just as how a beauty dresses, too much is not fashion but also too few is not widely acceptable(although some bachelor will like it).&lt;/p&gt;
 </description>
-        <pubDate>Thu, 29 May 2014 15:33:00 +0800</pubDate>
+        <pubDate>Thu, 29 May 2014 15:33:00 +0000</pubDate>
         <link>http://blog.bencao.it/2014/05/29/some-thoughts-about-coding/</link>
         <guid isPermaLink="true">http://blog.bencao.it/2014/05/29/some-thoughts-about-coding/</guid>
       </item>
@@ -250,7 +677,7 @@ So we can always try to find rooms for cutting unnecessary object constructions.
 &lt;h3 id=&quot;adjust-gc-make-it-run-faster&quot;&gt;adjust GC make it run faster&lt;/h3&gt;
 
 &lt;p&gt;Digging into &lt;a href=&quot;https://github.com/ruby/ruby/blob/trunk/gc.c&quot;&gt;ruby GC implementation&lt;/a&gt; you will find that there’re several tunable params to control its behaviours.&lt;br /&gt;
-For example, I used these settings in my local machine which accelerates visiting speed about 50%
+For example, I used these settings in my local machine which accelerates visiting speed about 50%&lt;br /&gt;
 &lt;code&gt;bash
 export RUBY_HEAP_MIN_SLOTS=300000
 export RUBY_HEAP_SLOTS_INCREMENT=100000
@@ -275,7 +702,7 @@ Beside of technics, the more important thing is&lt;br /&gt;
 
 &lt;p&gt;Thank you for reading!&lt;/p&gt;
 </description>
-        <pubDate>Sun, 03 Nov 2013 21:51:00 +0800</pubDate>
+        <pubDate>Sun, 03 Nov 2013 21:51:00 +0000</pubDate>
         <link>http://blog.bencao.it/2013/11/03/speed-up-rails-app/</link>
         <guid isPermaLink="true">http://blog.bencao.it/2013/11/03/speed-up-rails-app/</guid>
       </item>
@@ -286,7 +713,7 @@ Beside of technics, the more important thing is&lt;br /&gt;
 
 &lt;p&gt;The final work is &lt;a href=&quot;http://blog.bencao.it/fc_tank&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images/posts/tank_welcome_scene.png&quot; alt=&quot;Welcome Scene&quot; /&gt;
+&lt;p&gt;&lt;img src=&quot;/images/posts/tank_welcome_scene.png&quot; alt=&quot;Welcome Scene&quot; /&gt;&lt;br /&gt;
 &lt;img src=&quot;/images/posts/tank_game_scene.png&quot; alt=&quot;Game Scene&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;It’s an interesting journey, and following aspects are what I feel worth mentioning.&lt;/p&gt;
@@ -366,10 +793,10 @@ While each scene should be designed as individual as possible, a global storage 
 
   start: () -&amp;gt;
     super()
-    @current_stage = @game.get_config('current_stage')
+    @current_stage = @game.get_config(&#39;current_stage&#39;)
     @update_stage_label()
-    if @game.get_config('stage_autostart')
-      setTimeout((() =&amp;gt; @game.switch_scene('game')), 2000)
+    if @game.get_config(&#39;stage_autostart&#39;)
+      setTimeout((() =&amp;gt; @game.switch_scene(&#39;game&#39;)), 2000)
     else
       @enable_stage_control()
 
@@ -503,7 +930,7 @@ It reduces each path finding time from around 700ms to less than 50ms.&lt;/p&gt;
   &lt;li&gt;Multi-user online game&lt;/li&gt;
 &lt;/ul&gt;
 </description>
-        <pubDate>Mon, 06 May 2013 18:54:00 +0800</pubDate>
+        <pubDate>Mon, 06 May 2013 18:54:00 +0000</pubDate>
         <link>http://blog.bencao.it/2013/05/06/game-develop-in-html5-canvas-and-coffeescript/</link>
         <guid isPermaLink="true">http://blog.bencao.it/2013/05/06/game-develop-in-html5-canvas-and-coffeescript/</guid>
       </item>
@@ -569,16 +996,16 @@ Then I created “db” and “spec” folder, where hosts database/spec related
 &lt;p&gt;Before that, I need a sqlite db and setting up stand alone active record without rails.&lt;br /&gt;
 After some digest, I wrote this spec_helper, which setup up active record to a empty db.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;require 'active_support'
-require 'active_record'
-require 'sqlite3'
-require 'pry'
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;require &#39;active_support&#39;
+require &#39;active_record&#39;
+require &#39;sqlite3&#39;
+require &#39;pry&#39;
 
-db_config = YAML::load(IO.read('db/database.yml'))
-db_file = db_config['development']['database']
+db_config = YAML::load(IO.read(&#39;db/database.yml&#39;))
+db_file = db_config[&#39;development&#39;][&#39;database&#39;]
 File.delete(db_file) if File.exists?(db_file)
 ActiveRecord::Base.configurations = db_config
-ActiveRecord::Base.establish_connection('development')
+ActiveRecord::Base.establish_connection(&#39;development&#39;)
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;For a simple gem like this, I just defined two active record class “Post” and “Comment” inside my spec file, and use them inside a describe block.&lt;br /&gt;
@@ -588,7 +1015,7 @@ So you understand why I have to delete the sqlite db file in spec_helper.&lt;/p&
 
 &lt;p&gt;Here is how the spec looks like:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;require 'spec_helper.rb'
+&lt;pre&gt;&lt;code class=&quot;language-ruby&quot;&gt;require &#39;spec_helper.rb&#39;
 
 class Schema &amp;lt; ActiveRecord::Migration
   def change
@@ -608,7 +1035,7 @@ class Schema &amp;lt; ActiveRecord::Migration
 end
 Schema.new.change
 
-require 'acts_as_method_cacheable'
+require &#39;acts_as_method_cacheable&#39;
 
 class Post &amp;lt; ActiveRecord::Base
   has_many :comments
@@ -649,9 +1076,9 @@ end
 describe ActsAsMethodCacheable do
 
   before(:each) do
-    @post = Post.create!(:title =&amp;gt; 'test', :date =&amp;gt; '2013-04-04')
-    @post.comments.create!(:content =&amp;gt; 'ct1', :author =&amp;gt; 'ben', :date =&amp;gt; '2013-04-05')
-    @post.comments.create!(:content =&amp;gt; 'ct2', :author =&amp;gt; 'feng', :date =&amp;gt; '2013-04-06')
+    @post = Post.create!(:title =&amp;gt; &#39;test&#39;, :date =&amp;gt; &#39;2013-04-04&#39;)
+    @post.comments.create!(:content =&amp;gt; &#39;ct1&#39;, :author =&amp;gt; &#39;ben&#39;, :date =&amp;gt; &#39;2013-04-05&#39;)
+    @post.comments.create!(:content =&amp;gt; &#39;ct2&#39;, :author =&amp;gt; &#39;feng&#39;, :date =&amp;gt; &#39;2013-04-06&#39;)
     @comment1, @comment2 = @post.comments.to_a
   end
 
@@ -683,7 +1110,7 @@ end
 
 &lt;p&gt;And it’s all done.&lt;/p&gt;
 </description>
-        <pubDate>Wed, 10 Apr 2013 11:49:00 +0800</pubDate>
+        <pubDate>Wed, 10 Apr 2013 11:49:00 +0000</pubDate>
         <link>http://blog.bencao.it/2013/04/10/how-to-write-a-ruby-gem/</link>
         <guid isPermaLink="true">http://blog.bencao.it/2013/04/10/how-to-write-a-ruby-gem/</guid>
       </item>
